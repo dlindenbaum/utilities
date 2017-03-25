@@ -25,4 +25,4 @@ test:
   pre:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
   override:
-    - cd /home/ubuntu/utilities/python; python from spaceNetUtilities import geoTools as gT;
+    - cd /home/ubuntu/utilities/python; python test.py
