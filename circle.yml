@@ -8,7 +8,7 @@ machine:
 dependencies:
   override:
     # Moving to nilearn directory before performing the installation.
-    - apt-get update
+    - sudo apt-get update
     - sudo apt-get install -y python-numpy
     - sudo apt-get install -y python-scipy
     - sudo apt-get install -y libjpeg-dev zlib1g libtiff5-dev libfreetype6-dev libwebp-dev libopenjpeg-dev
