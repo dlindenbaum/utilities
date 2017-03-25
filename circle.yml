@@ -8,14 +8,14 @@ machine:
 dependencies:
   override:
     # Moving to nilearn directory before performing the installation.
-    - apt-get install -y python-numpy
-    - apt-get install -y python-scipy
-    - apt-get install -y libjpeg-dev zlib1g libtiff5-dev libfreetype6-dev libwebp-dev libopenjpeg-dev
-    - pip install Pillow
-    - apt-get install -y gdal-bin python-gdal
-    - apt-get install -y libopencv-dev python-opencv
-    - apt-get install -y libspatialindex-dev
-    - pip install rtree
+    - sudo apt-get install -y python-numpy
+    - sudo apt-get install -y python-scipy
+    - sudo apt-get install -y libjpeg-dev zlib1g libtiff5-dev libfreetype6-dev libwebp-dev libopenjpeg-dev
+    - sudo pip install Pillow
+    - sudo apt-get install -y gdal-bin python-gdal
+    - sudo apt-get install -y libopencv-dev python-opencv
+    - sudo apt-get install -y libspatialindex-dev
+    - sudo pip install rtree
 
 
 # Set up the commands to run as a test (override), as well as the commands to
