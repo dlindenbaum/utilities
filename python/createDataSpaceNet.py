@@ -4,6 +4,7 @@ import random
 from spaceNetUtilities import labelTools as lT
 from spaceNetUtilities import geoTools as gT
 import argparse
+import json
 
 
 def processRasterChip(rasterImage, rasterDescription, geojson, geojsonDescription, outputDirectory='',
@@ -54,7 +55,7 @@ def processChipSummaryList(chipSummaryList, outputDirectory='', annotationType='
                            datasetName='spacenetV2',
                            folder_name='folder_name',
                            bboxResize=1.0,
-                           configJson='',
+                           objectClassDict='',
                            attributeName=''
                            ):
 
@@ -85,7 +86,7 @@ def processChipSummaryList(chipSummaryList, outputDirectory='', annotationType='
                                               outputPixType=outputPixType,
                                               outputFormat=outputFormat,
                                               bboxResize=bboxResize,
-                                              configJson=configJson,
+                                              objectClassDict=objectClassDict,
                                               attributeName=attributeName
                                               )
         elif annotationType=='DARKNET':
@@ -273,7 +274,7 @@ if __name__ == '__main__':
         geojsonDirectory = os.path.join('vectordata','geojson')
         # 'vectordata/geojson'
     else:
-        print('Bad Spacenet Version Submitted,  Version {} is not supported'.foramt(args.spacenetVersion))
+        print('Bad Spacenet Version Submitted,  Version {} is not supported'.format(args.spacenetVersion))
 
     if args.convertTo8Bit:
 
@@ -289,11 +290,19 @@ if __name__ == '__main__':
     else:
         fullPathAnnotationsDirectory = args.outputDirectory
 
+    if args.POIConfigJson == '':
+        objectClassDict=''
+    else:
+
+        with open(args.POIConfigJson, 'r') as f:
+            objectClassDict = json.load(f)
+
     for aoiSubDir in listOfAOIs:
         fullPathSubDir = os.path.join(srcSpaceNetDirectory, aoiSubDir)
 
         ## Create Annotations directory
-        #fullPathAnnotationsDirectory = os.path.join(fullPathSubDir, annotationsDirectory)
+        ## fullPathAnnotationsDirectory = os.path.join(fullPathSubDir, annotationsDirectory)
+
         if not os.path.exists(fullPathAnnotationsDirectory):
             os.makedirs(fullPathAnnotationsDirectory)
         if not os.path.exists(os.path.join(fullPathAnnotationsDirectory, 'annotations')):
@@ -331,7 +340,8 @@ if __name__ == '__main__':
                                                       outputPixType=outputDataType,
                                                       datasetName='spacenetV2',
                                                       folder_name='folder_name',
-                                                      bboxResize= args.boundingBoxResize
+                                                      bboxResize= args.boundingBoxResize,
+                                                      objectClassDict=objectClassDict
                                        )
                 print(entryListTmp)
                 entryList.extend(entryListTmp)
