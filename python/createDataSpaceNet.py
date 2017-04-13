@@ -97,7 +97,9 @@ def processChipSummaryList(chipSummaryList, outputDirectory='', annotationType='
                                         convertTo8Bit=convertTo8Bit,
                                         outputPixType=outputPixType,
                                         outputFormat=outputFormat,
-                                        bboxResize=bboxResize
+                                        bboxResize=bboxResize,
+                                        objectClassDict=objectClassDict,
+                                        attributeName=attributeName
                                         )
 
         elif annotationType=='SBD':
