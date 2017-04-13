@@ -66,7 +66,9 @@ def createPolygonShapeFile(srcVectorFile, outVectorFile, pointOfInterestList):
 def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, shapeFileSrcList,
                            baseName='',
                            className='',
-                           outputDirectory=''):
+                           outputDirectory='',
+                           seperateImageFolders=False
+                           ):
 
 
     chipSummaryList = []
@@ -96,7 +98,10 @@ def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, s
 
 
         spacenetFeatureName = feature.GetField('spaceNetFeature')
-
+        if seperateImageFolders:
+            className = spacenetFeatureName.replace(' ', '')
+        else:
+            className = ''
         clipSize = pointOfInterestList[spacenetFeatureName]['featureChipScaleM']
         halfClipSizeXm = round((clipSize/metersPerPix)/2)
 
@@ -117,7 +122,7 @@ def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, s
                        outputPrefix='',
                        createPix=False,
                        rasterPolyEnvelope=ogr.CreateGeometryFromWkt("POLYGON EMPTY"),
-                       className=spacenetFeatureName.replace(' ', ''),
+                       className=className,
                        baseName=baseName,
                        imgId=imgId)
 
@@ -134,6 +139,7 @@ if __name__ == '__main__':
     className = 'POIAll'
     baseName = 'AOI_1_RIO'
     featureDescriptionJson = '../configFiles/AOI_1_Rio_POI_Description.json'
+    seperateImageFolders = False
 
     # List of Raster Images to Chip and an appropriate label.
     # This list will take any type of Raster supported by GDAL
@@ -175,7 +181,8 @@ if __name__ == '__main__':
     createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, shapeFileSrcList,
                            baseName=baseName,
                            className='',
-                           outputDirectory=outputDirectory)
+                           outputDirectory=outputDirectory,
+                           seperateImageFolders=seperateImageFolders)
 
 
 
