@@ -606,7 +606,7 @@ def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], p
                                                  'polyGeo': ogr.CreateGeometryFromWkt(geom_wkt[1]),
                                                  'polyPix': ogr.CreateGeometryFromWkt(geom_wkt[0]),
                                                  'featureName': featureName,
-                                                 'featureId': featureId
+                                                 'featureIdNum': featureId
                                                  })
                     else:
                         building_id += 1
@@ -615,7 +615,7 @@ def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], p
                                              'polyGeo': ogr.CreateGeometryFromWkt(geom.ExportToWkt()),
                                              'polyPix': ogr.CreateGeometryFromWkt('POLYGON EMPTY'),
                                              'featureName' : featureName,
-                                             'featureId': featureId
+                                             'featureIdNum': featureId
                                              })
             else:
                 #print("no File exists")
