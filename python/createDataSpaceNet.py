@@ -53,7 +53,9 @@ def processChipSummaryList(chipSummaryList, outputDirectory='', annotationType='
                            outputPixType='',
                            datasetName='spacenetV2',
                            folder_name='folder_name',
-                           bboxResize=1.0
+                           bboxResize=1.0,
+                           configJson='',
+                           attributeName=''
                            ):
 
     if outputPixType == '':
@@ -82,7 +84,9 @@ def processChipSummaryList(chipSummaryList, outputDirectory='', annotationType='
                                               convertTo8Bit=convertTo8Bit,
                                               outputPixType=outputPixType,
                                               outputFormat=outputFormat,
-                                              bboxResize=bboxResize
+                                              bboxResize=bboxResize,
+                                              configJson=configJson,
+                                              attributeName=attributeName
                                               )
         elif annotationType=='DARKNET':
             entry = lT.geoJsonToDARKNET(annotationName, chipSummary['geoVectorName'], chipSummary['rasterSource'],
@@ -228,7 +232,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument("--featureName",
                         help='Type of feature to be summarized by csv (i.e. Building)'
-                             'Currently in SpaceNet V2 Building is only label',
+                             'Currently in SpaceNet V2 Building is the only label',
                         type=str,
                         default='Buildings')
     parser.add_argument("--spacenetVersion",
@@ -247,6 +251,12 @@ if __name__ == '__main__':
                         type=float,
                         default=1.0)
 
+    parser.add_argument("--POIConfigJson",
+                        help='JSON file containing information about valid Points of interest',
+                        default='')
+    parser.add_argument("--attributeName",
+                        help='Attribute in GeoJson to pull the feature name from',
+                        default='spacenetFeature')
     args = parser.parse_args()
 
     entryList = []

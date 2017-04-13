@@ -508,16 +508,19 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
                            convertTo8Bit=True,
                            outputPixType='Byte',
                            outputFormat='GTiff',
-                           bboxResize=1.0):
+                           bboxResize=1.0,
+                           objectClassDict='',
+                           attributeName=''):
 
     print("creating {}".format(xmlFileName))
-    buildingList = gT.convert_wgs84geojson_to_pixgeojson(geoJson, rasterImageName, image_id=[], pixelgeojson=[], only_polygons=True,
-                                       breakMultiPolygonGeo=True, pixPrecision=2)
-    #                        buildinglist.append({'ImageId': image_id,
+    featureList = gT.convert_wgs84geojson_to_pixgeojson(geoJson, rasterImageName, image_id=[], pixelgeojson=[], only_polygons=True,
+                                       breakMultiPolygonGeo=True, pixPrecision=2, attributeName=attributeName,
+                                                        objectClassDict=objectClassDict)
+    #                        featureList.append({'ImageId': image_id,
                                              #'BuildingId': building_id,
                                              #'polyGeo': ogr.CreateGeometryFromWkt(geom.ExportToWkt()),
                                              #'polyPix': ogr.CreateGeometryFromWkt('POLYGON EMPTY')
-                                             #})
+                                             #'featuerName': featureName})
 
 
 
@@ -582,13 +585,13 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
     SubElement(top, 'segmented').text = str(segmented)
 
     # start object segment
-    for building in buildingList:
-        objectType = 'building'
+    for feature in featureList:
+        objectType = feature['featureName']
         objectPose = 'Left'
         objectTruncated = 0  # 1=True, 0 = False
         objectDifficulty = 0  # 0 Easy - 3 Hard
 
-        env = building['polyPix'].GetEnvelope()
+        env = feature['polyPix'].GetEnvelope()
         xmin=env[0]
         ymin=env[2]
         xmax=env[1]
@@ -638,6 +641,8 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
 
         idField = ogr.FieldDefn("objid", ogr.OFTInteger)
         innerBufferLayer.CreateField(idField)
+        idField = ogr.FieldDefn("clsid", ogr.OFTInteger)
+        innerBufferLayer.CreateField(idField)
 
         featureDefn = innerBufferLayer.GetLayerDefn()
         bufferDist = srcRaster.GetGeoTransform()[1]*bufferSizePix
@@ -658,6 +663,12 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
                 inBufFeature = ogr.Feature(featureDefn)
                 inBufFeature.SetGeometry(geomBufferIn)
                 inBufFeature.SetField('objid', idx)
+                if attributeName !='':
+                    inBufFeature.SetField('clsid', objectClassDict[feature.GetField(attributeName)]['featureIdNum'])
+                else:
+                    inBufFeature.SetField('clsid', 100)
+
+
                 innerBufferLayer.CreateFeature(inBufFeature)
 
                 outBufFeature = None
@@ -681,7 +692,7 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
         print('rasterize outer buffer')
         gdal.RasterizeLayer(target_ds, [1], outerBufferLayer, burn_values=[255])
         print('rasterize inner buffer')
-        gdal.RasterizeLayer(target_ds, [1], innerBufferLayer, burn_values=[100])
+        gdal.RasterizeLayer(target_ds, [1], innerBufferLayer, burn_values=[100], options='ATTRIBUTE=clsid')
         print('writing png sgcls')
         # write to .png
         imageArray = np.array(target_ds.GetRasterBand(1).ReadAsArray())

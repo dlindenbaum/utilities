@@ -542,15 +542,23 @@ def geoWKTToPixelWKT(geom, inputRaster, targetSR, geomTransform, pixPrecision=2)
 
 
 def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], pixelgeojson=[], only_polygons=True,
-                                       breakMultiPolygonGeo=True, pixPrecision=2):
+                                       breakMultiPolygonGeo=True, pixPrecision=2,
+                                       attributeName='',
+                                       objectClassDict=''):
     dataSource = ogr.Open(wgs84geojson, 0)
     layer = dataSource.GetLayer()
     #print(layer.GetFeatureCount())
     building_id = 0
     # check if geoJsonisEmpty
-    buildinglist = []
+    feautureList = []
     if not image_id:
         image_id = inputraster.replace(".tif", "")
+
+
+
+
+
+
 
     if layer.GetFeatureCount() > 0:
 
@@ -564,7 +572,21 @@ def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], p
 
 
 
+
                 for feature in layer:
+                    if attributeName != '':
+                        featureName = feature.GetField(attributeName)
+                    else:
+                        featureName = 'building'
+
+                    if len(objectClassDict) > 0:
+                        try:
+                            featureId = objectClassDict[featureName]['featureIdNum']
+                        except:
+                            raise('featureName {} not recognized'.format(featureName))
+                    else:
+                        featureId = 1
+
 
                     geom = feature.GetGeometryRef()
                     if len(inputraster)>0:
@@ -579,27 +601,31 @@ def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], p
 
                         for geom_wkt in geom_wkt_list:
                             building_id += 1
-                            buildinglist.append({'ImageId': image_id,
+                            feautureList.append({'ImageId': image_id,
                                                  'BuildingId': building_id,
                                                  'polyGeo': ogr.CreateGeometryFromWkt(geom_wkt[1]),
-                                                 'polyPix': ogr.CreateGeometryFromWkt(geom_wkt[0])
+                                                 'polyPix': ogr.CreateGeometryFromWkt(geom_wkt[0]),
+                                                 'featureName': featureName,
+                                                 'featureId': featureId
                                                  })
                     else:
                         building_id += 1
-                        buildinglist.append({'ImageId': image_id,
+                        feautureList.append({'ImageId': image_id,
                                              'BuildingId': building_id,
                                              'polyGeo': ogr.CreateGeometryFromWkt(geom.ExportToWkt()),
-                                             'polyPix': ogr.CreateGeometryFromWkt('POLYGON EMPTY')
+                                             'polyPix': ogr.CreateGeometryFromWkt('POLYGON EMPTY'),
+                                             'featureName' : featureName,
+                                             'featureId': featureId
                                              })
             else:
                 #print("no File exists")
                 pass
         if pixelgeojson:
-            exporttogeojson(pixelgeojson, buildinglist=buildinglist)
+            exporttogeojson(pixelgeojson, buildinglist=feautureList)
 
 
 
-    return buildinglist
+    return feautureList
 
 def convert_pixgwktList_to_wgs84wktList(inputRaster, wktPolygonPixList):
     ## returns # [[GeoWKT, PixWKT], ...]
