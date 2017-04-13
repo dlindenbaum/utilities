@@ -520,7 +520,8 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
                                              #'BuildingId': building_id,
                                              #'polyGeo': ogr.CreateGeometryFromWkt(geom.ExportToWkt()),
                                              #'polyPix': ogr.CreateGeometryFromWkt('POLYGON EMPTY')
-                                             #'featuerName': featureName})
+                                             #'featuerName': featureName,
+                                             # 'featureIdNum': featureIdNum})
 
 
 
@@ -692,7 +693,7 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
         print('rasterize outer buffer')
         gdal.RasterizeLayer(target_ds, [1], outerBufferLayer, burn_values=[255])
         print('rasterize inner buffer')
-        gdal.RasterizeLayer(target_ds, [1], innerBufferLayer, burn_values=[100], options='ATTRIBUTE=clsid')
+        gdal.RasterizeLayer(target_ds, [1], innerBufferLayer, burn_values=[100], options=['ATTRIBUTE=clsid'])
         print('writing png sgcls')
         # write to .png
         imageArray = np.array(target_ds.GetRasterBand(1).ReadAsArray())
@@ -753,17 +754,22 @@ def geoJsonToDARKNET(xmlFileName, geoJson, rasterImageName, im_id='',
                      convertTo8Bit=True,
                      outputPixType='Byte',
                      outputFormat='GTiff',
-                     bboxResize=1.0):
+                     bboxResize=1.0,
+                     objectClassDict='',
+                     attributeName=''):
+
     xmlFileName = xmlFileName.replace(".xml", ".txt")
     print("creating {}".format(xmlFileName))
 
-    buildingList = gT.convert_wgs84geojson_to_pixgeojson(geoJson, rasterImageName, image_id=[], pixelgeojson=[], only_polygons=True,
-                                       breakMultiPolygonGeo=True, pixPrecision=2)
-    #                        buildinglist.append({'ImageId': image_id,
+    featureList = gT.convert_wgs84geojson_to_pixgeojson(geoJson, rasterImageName, image_id=[], pixelgeojson=[], only_polygons=True,
+                                       breakMultiPolygonGeo=True, pixPrecision=2, attributeName=attributeName,
+                                                        objectClassDict=objectClassDict)
+    #                        featureList.append({'ImageId': image_id,
                                              #'BuildingId': building_id,
                                              #'polyGeo': ogr.CreateGeometryFromWkt(geom.ExportToWkt()),
                                              #'polyPix': ogr.CreateGeometryFromWkt('POLYGON EMPTY')
-                                             #})
+                                             #'featuerName': featureName,
+                                             #'featureIdNum': featureIdNum})
 
 
     srcRaster = gdal.Open(rasterImageName)
@@ -799,12 +805,12 @@ def geoJsonToDARKNET(xmlFileName, geoJson, rasterImageName, im_id='',
 
     with open(xmlFileName, 'w') as f:
 
-        for building in buildingList:
+        for feature in featureList:
 
 
             # Get Envelope returns a tuple (minX, maxX, minY, maxY)
 
-            boxDim = building['polyPix'].GetEnvelope()
+            boxDim = feature['polyPix'].GetEnvelope()
 
             if bboxResize != 1.0:
                 xmin = boxDim[0]
@@ -825,7 +831,7 @@ def geoJsonToDARKNET(xmlFileName, geoJson, rasterImageName, im_id='',
             rasterSize = (srcRaster.RasterXSize, srcRaster.RasterYSize)
 
             lineOutput = convertPixDimensionToPercent(rasterSize, boxDim)
-            classNum=0
+            classNum=feature['featureIdNum']
             f.write('{} {} {} {} {}\n'.format(classNum,
                                              lineOutput[0],
                                              lineOutput[1],
