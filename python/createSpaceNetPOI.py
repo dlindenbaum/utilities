@@ -1,6 +1,6 @@
 from osgeo import ogr, gdal, osr
 from spaceNetUtilities import geoTools as gT
-import argparse
+import json
 import os
 
 
@@ -16,95 +16,6 @@ def returnBoundBoxM(tmpGeom, metersRadius=50):
 
     return polyEnv
 
-### Define Point of Interest Dictionary
-# {'spacenetFeatureName':
-#   {'featureIdNum': '1', # iterative feature id. Used for object name to class number mapping
-#    'featureChipScaleM': 200, # Size of chip to create in meters
-#    'featureBBoxSizeM': 10 # Feature Bounding Box Assumption.  Code will draw an x meter bounding box around the point
-#                           # indicating in the geojson.  This will be used in creating polygons for IOU scoring
-#    }
-
-pointOfInterestList = {'Airfield_POIApron Lights Tower': {
-    'featureIdNum': '1',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 10
-    },
-    'Airfield_POIHangar': {
-    'featureIdNum': '2',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-    'Airfield_POIHelipad': {
-    'featureIdNum': '3',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-'Airfield_POISupport Facility': {
-    'featureIdNum': '4',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 10
-    },
-'Bridges_TunnelsBridgePedestrian': {
-    'featureIdNum': '5',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-'Bridges_TunnelsBridgeRoad': {
-    'featureIdNum': '6',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-'Commercial_POIServiceBar': {
-    'featureIdNum': '7',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-'Electrical_POITransmission Tower': {
-    'featureIdNum': '8',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 10
-    },
-'EmbassiesConsulate': {
-    'featureIdNum': '9',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-'Olympic_Venues': {
-    'featureIdNum': '10',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 50
-    },
-'Public_Transportation_POIBusStop': {
-    'featureIdNum': '11',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 5
-    },
-'Railways_POI999999Station': {
-    'featureIdNum': '12',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-'Recreation_POIPark': {
-    'featureIdNum': '13',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 50
-    },
-'Recreation_POIPool': {
-    'featureIdNum': '14',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 50
-    },
-'Recreation_POISports Facility': {
-    'featureIdNum': '15',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 50
-    },
-'Religious_InstitutionsChurch': {
-    'featureIdNum': '16',
-    'featureChipScaleM': 200,
-    'featureBBoxSizeM': 25
-    },
-}
 
 
 def createPolygonShapeFile(srcVectorFile, outVectorFile, pointOfInterestList):
@@ -222,6 +133,7 @@ if __name__ == '__main__':
     outputDirectory = '/path/To/processedDataPOI/'
     className = 'POIAll'
     baseName = 'AOI_1_RIO'
+    featureDescriptionJson = '../configFiles/AOI_1_Rio_POI_Description.json'
 
     # List of Raster Images to Chip and an appropriate label.
     # This list will take any type of Raster supported by GDAL
@@ -234,6 +146,17 @@ if __name__ == '__main__':
     shapeFileSrcList = [
         [outVectorFile, 'POIAll']
     ]
+
+    ### Define Point of Interest Dictionary
+    # {'spacenetFeatureName':
+    #   {'featureIdNum': '1', # iterative feature id. Used for object name to class number mapping
+    #    'featureChipScaleM': 200, # Size of chip to create in meters
+    #    'featureBBoxSizeM': 10 # Feature Bounding Box Assumption.  Code will draw an x meter bounding box around the point
+    #                           # indicating in the geojson.  This will be used in creating polygons for IOU scoring
+    #    }
+
+    with open(featureDescriptionJson, 'r') as j:
+        pointOfInterestList = json.load(j)
 
     # create Polygon of Interet from Point of Interest File.  This will create bounding boxes of specified size.
     if createOutVectorFile:

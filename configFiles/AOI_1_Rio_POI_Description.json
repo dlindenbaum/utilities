@@ -1,0 +1,84 @@
+{
+  "Airfield_POIApron Lights Tower": {
+    "featureIdNum": 1,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 10
+    },
+    "Airfield_POIHangar": {
+    "featureIdNum": 2,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+    "Airfield_POIHelipad": {
+    "featureIdNum": 3,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+"Airfield_POISupport Facility": {
+    "featureIdNum": 4,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 10
+    },
+"Bridges_TunnelsBridgePedestrian": {
+    "featureIdNum": 5,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+"Bridges_TunnelsBridgeRoad": {
+    "featureIdNum": 6,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+"Commercial_POIServiceBar": {
+    "featureIdNum": 7,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+"Electrical_POITransmission Tower": {
+    "featureIdNum": 8,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 10
+    },
+"EmbassiesConsulate": {
+    "featureIdNum": 9,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+"Olympic_Venues": {
+    "featureIdNum": 10,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 50
+    },
+"Public_Transportation_POIBusStop": {
+    "featureIdNum": 11,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 5
+    },
+"Railways_POI999999Station": {
+    "featureIdNum": 12,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    },
+"Recreation_POIPark": {
+    "featureIdNum": 13,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 50
+    },
+"Recreation_POIPool": {
+    "featureIdNum": 14,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 50
+    },
+"Recreation_POISports Facility": {
+    "featureIdNum": 15,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 50
+    },
+"Religious_InstitutionsChurch": {
+    "featureIdNum": 16,
+    "featureChipScaleM": 200,
+    "featureBBoxSizeM": 25
+    }
+}
+
+
