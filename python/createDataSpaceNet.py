@@ -341,7 +341,8 @@ if __name__ == '__main__':
                                                       datasetName='spacenetV2',
                                                       folder_name='folder_name',
                                                       bboxResize= args.boundingBoxResize,
-                                                      objectClassDict=objectClassDict
+                                                      objectClassDict=objectClassDict,
+                                                      attributeName=args.attributeName
                                        )
                 print(entryListTmp)
                 entryList.extend(entryListTmp)
