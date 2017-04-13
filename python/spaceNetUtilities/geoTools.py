@@ -583,7 +583,7 @@ def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], p
                         try:
                             featureId = objectClassDict[featureName]['featureIdNum']
                         except:
-                            raise('featureName {} not recognized'.format(featureName))
+                            print('featureName {} not recognized'.format(featureName))
                     else:
                         featureId = 1
 
