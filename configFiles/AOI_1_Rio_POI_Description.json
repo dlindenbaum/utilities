@@ -12,7 +12,7 @@
     "Airfield_POIHelipad": {
     "featureIdNum": 3,
     "featureChipScaleM": 200,
-    "featureBBoxSizeM": 25
+    "featureBBoxSizeM": 18
     },
 "Airfield_POISupport Facility": {
     "featureIdNum": 4,
@@ -22,12 +22,12 @@
 "Bridges_TunnelsBridgePedestrian": {
     "featureIdNum": 5,
     "featureChipScaleM": 200,
-    "featureBBoxSizeM": 25
+    "featureBBoxSizeM": 20
     },
 "Bridges_TunnelsBridgeRoad": {
     "featureIdNum": 6,
     "featureChipScaleM": 200,
-    "featureBBoxSizeM": 25
+    "featureBBoxSizeM": 20
     },
 "Commercial_POIServiceBar": {
     "featureIdNum": 7,
@@ -37,7 +37,7 @@
 "Electrical_POITransmission Tower": {
     "featureIdNum": 8,
     "featureChipScaleM": 200,
-    "featureBBoxSizeM": 10
+    "featureBBoxSizeM": 12
     },
 "EmbassiesConsulate": {
     "featureIdNum": 9,
@@ -67,12 +67,12 @@
 "Recreation_POIPool": {
     "featureIdNum": 14,
     "featureChipScaleM": 200,
-    "featureBBoxSizeM": 50
+    "featureBBoxSizeM": 10
     },
 "Recreation_POISports Facility": {
     "featureIdNum": 15,
     "featureChipScaleM": 200,
-    "featureBBoxSizeM": 50
+    "featureBBoxSizeM": 30
     },
 "Religious_InstitutionsChurch": {
     "featureIdNum": 16,
