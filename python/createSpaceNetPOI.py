@@ -68,7 +68,8 @@ def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, s
                            baseName='',
                            className='',
                            outputDirectory='',
-                           seperateImageFolders=False
+                           seperateImageFolders=False,
+                           minPartialToInclue = 0.70
                            ):
 
 
@@ -119,7 +120,7 @@ def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, s
         chipSummary = gT.createclip(outputDirectory, rasterFileList, shapeSrcList,
                        maxXCut, maxYCut, minYCut, minXCut,
                        rasterFileBaseList=[],
-                       minpartialPerc=0,
+                       minpartialPerc=minPartialToInclue,
                        outputPrefix='',
                        createPix=False,
                        rasterPolyEnvelope=ogr.CreateGeometryFromWkt("POLYGON EMPTY"),
@@ -150,7 +151,7 @@ def splitVectorFile(geoJson, latCutOff=-500, lonCutOff=-500):
 
     outputGeoJsonTrain = geoJson.replace('.geojson', 'train.geojson')
     cmd = ['ogr2ogr', '-f', "GeoJSON", outputGeoJsonTrain, geoJson,
-           '-clipsrc', longMin, latMin, longMax, latMax]
+           '-clipsrc', '{}'.format(longMin), '{}'.format(latMin), '{}'.format(longMax), '{}'.format(latMax)]
 
     subprocess.call(cmd)
     longMin = -500
@@ -170,7 +171,7 @@ def splitVectorFile(geoJson, latCutOff=-500, lonCutOff=-500):
 
     outputGeoJsonTest = geoJson.replace('.geojson', 'test.geojson')
     cmd = ['ogr2ogr', '-f', "GeoJSON", outputGeoJsonTest, geoJson,
-           '-clipsrc', longMin, latMin, longMax, latMax]
+           '-clipsrc', '{}'.format(longMin), '{}'.format(latMin), '{}'.format(longMax), '{}'.format(latMax)]
     subprocess.call(cmd)
 
 
@@ -254,7 +255,8 @@ if __name__ == '__main__':
                                baseName=baseName,
                                className='',
                                outputDirectory=outputDirectoryTmp,
-                               seperateImageFolders=seperateImageFolders)
+                               seperateImageFolders=seperateImageFolders,
+                               minPartialToInclue=0.70)
 
 
 
