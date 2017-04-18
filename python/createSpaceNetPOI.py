@@ -238,6 +238,9 @@ if __name__ == '__main__':
 
         outputDirectoryTmp = os.path.join(outputDirectory, folderType)
 
+        shapeFileSrcList = [
+            [outVectorFile, 'POIAll']
+        ]
     # create Folder Structure to place files into.
 
         for rasterFile in rasterFileList:
