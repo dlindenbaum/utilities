@@ -2,6 +2,7 @@ from osgeo import ogr, gdal, osr
 from spaceNetUtilities import geoTools as gT
 import json
 import os
+import subprocess
 
 
 
@@ -130,6 +131,52 @@ def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, s
 
     return chipSummaryList
 
+
+def splitVectorFile(geoJson, latCutOff=-500, lonCutOff=-500):
+
+
+    longMin = -500
+    latMin = -500
+    if latCutOff == -500:
+        latMax = 500
+    else:
+        latMax = latCutOff
+
+    if lonCutOff == -500:
+        longMax = 500
+    else:
+        longMax = lonCutOff
+
+
+    outputGeoJsonTrain = geoJson.replace('.geojson', 'train.geojson')
+    cmd = ['ogr2ogr', '-f', "GeoJSON", outputGeoJsonTrain, geoJson,
+           '-clipsrc', longMin, latMin, longMax, latMax]
+
+    subprocess.call(cmd)
+    longMin = -500
+    latMin = -500
+    if latCutOff == -500:
+        latMax = 500
+    else:
+        latMin = latCutOff
+        latMax = 500
+
+
+    if lonCutOff == -500:
+        longMax = 500
+    else:
+        longMin = lonCutOff
+        longMax = 500
+
+    outputGeoJsonTest = geoJson.replace('.geojson', 'test.geojson')
+    cmd = ['ogr2ogr', '-f', "GeoJSON", outputGeoJsonTest, geoJson,
+           '-clipsrc', longMin, latMin, longMax, latMax]
+    subprocess.call(cmd)
+
+
+    return outputGeoJsonTest, outputGeoJsonTrain
+
+
 if __name__ == '__main__':
 
     createOutVectorFile = True
@@ -140,6 +187,23 @@ if __name__ == '__main__':
     baseName = 'AOI_1_RIO'
     featureDescriptionJson = '../configFiles/AOI_1_Rio_POI_Description.json'
     seperateImageFolders = False
+    splitGeoJson = True
+    splitGeoJson_latCutOff = -500 #-500 is ignore
+    splitGeoJson_lonCutOff = -43.25       #-500 is ignore
+    srcVectorFileList = [[srcVectorFile, 'all']]
+    if splitGeoJson:
+        srcVectorTrain, srcVectorTest = splitVectorFile(srcVectorFile,
+                                                        latCutOff=splitGeoJson_latCutOff,
+                                                        lonCutOff=splitGeoJson_lonCutOff)
+
+        srcVectorFileList = [
+                            [srcVectorTrain, 'train'],
+                            [srcVectorTest, 'test']
+                            ]
+
+
+
+
 
     # List of Raster Images to Chip and an appropriate label.
     # This list will take any type of Raster supported by GDAL
@@ -153,6 +217,7 @@ if __name__ == '__main__':
         [outVectorFile, 'POIAll']
     ]
 
+
     ### Define Point of Interest Dictionary
     # {'spacenetFeatureName':
     #   {'featureIdNum': '1', # iterative feature id. Used for object name to class number mapping
@@ -165,24 +230,28 @@ if __name__ == '__main__':
         pointOfInterestList = json.load(j)
 
     # create Polygon of Interet from Point of Interest File.  This will create bounding boxes of specified size.
-    if createOutVectorFile:
-        createPolygonShapeFile(srcVectorFile, outVectorFile, pointOfInterestList)
+    for srcVectorFile, folderType in srcVectorFileList:
+        outVectorFile = srcVectorFile.replace('.geojson', 'poly.geojson')
+        if createOutVectorFile:
+            createPolygonShapeFile(srcVectorFile, outVectorFile, pointOfInterestList)
 
+
+        outputDirectoryTmp = os.path.join(outputDirectory, folderType)
 
     # create Folder Structure to place files into.
 
-    for rasterFile in rasterFileList:
-        for featureName in pointOfInterestList.keys():
-            tmpPath = os.path.join(outputDirectory, rasterFile[1], featureName.replace(' ', ''))
-            if not os.path.exists(tmpPath):
-                os.makedirs(tmpPath)
+        for rasterFile in rasterFileList:
+            for featureName in pointOfInterestList.keys():
+                tmpPath = os.path.join(outputDirectoryTmp, rasterFile[1], featureName.replace(' ', ''))
+                if not os.path.exists(tmpPath):
+                    os.makedirs(tmpPath)
 
-    # create Processed Point of Interest Data.
-    createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, shapeFileSrcList,
-                           baseName=baseName,
-                           className='',
-                           outputDirectory=outputDirectory,
-                           seperateImageFolders=seperateImageFolders)
+        # create Processed Point of Interest Data.
+        createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, shapeFileSrcList,
+                               baseName=baseName,
+                               className='',
+                               outputDirectory=outputDirectoryTmp,
+                               seperateImageFolders=seperateImageFolders)
 
 
 
