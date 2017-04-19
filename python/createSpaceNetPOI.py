@@ -3,7 +3,7 @@ from spaceNetUtilities import geoTools as gT
 import json
 import os
 import subprocess
-
+import geopandas as gpd
 
 
 def returnBoundBoxM(tmpGeom, metersRadius=50):
@@ -175,8 +175,22 @@ def splitVectorFile(geoJson, latCutOff=-500, lonCutOff=-500):
     subprocess.call(cmd)
 
 
-    return outputGeoJsonTest, outputGeoJsonTrain
+    return outputGeoJsonTrain, outputGeoJsonTest
 
+def deduplicateGeoJson(geoJsonIn, geoJsonOut=''):
+
+
+    df = gpd.read_file(geoJsonIn)
+    df['y'] = df.geometry.map(lambda p: p.y)
+    df['x'] = df.geometry.map(lambda p: p.x)
+    df.drop_duplicates(subset=['spaceNetFeature', 'x', 'y'], keep='first', inplace=True)
+    df.drop(['x', 'y'], 1, inplace=True)
+
+    if geoJsonOut=='':
+        geoJsonOut = geoJsonIn.replace('.geojson', 'dedup.geojson')
+    df.to_file(geoJsonOut, driver='GeoJSON')
+
+    return geoJsonOut
 
 if __name__ == '__main__':
 
@@ -189,9 +203,15 @@ if __name__ == '__main__':
     featureDescriptionJson = '../configFiles/AOI_1_Rio_POI_Description.json'
     seperateImageFolders = False
     splitGeoJson = True
-    splitGeoJson_latCutOff = -500 #-500 is ignore
+    deduplicateGeoJsonFlag = True
+
+    if deduplicateGeoJsonFlag:
+        srcVectorFile = deduplicateGeoJson(srcVectorFile)
+
+    splitGeoJson_latCutOff = -22.94 #-500 is ignore
     splitGeoJson_lonCutOff = -43.25       #-500 is ignore
     srcVectorFileList = [[srcVectorFile, 'all']]
+
     if splitGeoJson:
         srcVectorTrain, srcVectorTest = splitVectorFile(srcVectorFile,
                                                         latCutOff=splitGeoJson_latCutOff,
