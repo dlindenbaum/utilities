@@ -77,6 +77,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install rtree
 
+## Install GeoPandas
+RUN pip install geopandas
+
 ENV GIT_BASE=/opt/
 WORKDIR $GIT_BASE
 
