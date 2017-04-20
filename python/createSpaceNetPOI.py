@@ -177,10 +177,10 @@ def splitVectorFile(geoJson, latCutOff=-500, lonCutOff=-500):
 
     return outputGeoJsonTrain, outputGeoJsonTest
 
-def deduplicateGeoJson(geoJsonIn, geoJsonOut=''):
+def deduplicateGeoJson(geoJsonIn, geoJsonOut='', encoding='UTF-8'):
 
 
-    df = gpd.read_file(geoJsonIn)
+    df = gpd.read_file(geoJsonIn, encoding=encoding)
     df['y'] = df.geometry.map(lambda p: p.y)
     df['x'] = df.geometry.map(lambda p: p.x)
     df.drop_duplicates(subset=['spaceNetFeature', 'x', 'y'], keep='first', inplace=True)
@@ -188,7 +188,7 @@ def deduplicateGeoJson(geoJsonIn, geoJsonOut=''):
 
     if geoJsonOut=='':
         geoJsonOut = geoJsonIn.replace('.geojson', 'dedup.geojson')
-    df.to_file(geoJsonOut, driver='GeoJSON')
+    df.to_file(geoJsonOut, driver='GeoJSON', encoding=encoding)
 
     return geoJsonOut
 
