@@ -4,7 +4,7 @@ import json
 import os
 import subprocess
 import geopandas as gpd
-
+from geopandas.geoseries import Polygon
 
 def returnBoundBoxM(tmpGeom, metersRadius=50):
     poly = gT.createPolygonFromCenterPoint(tmpGeom.GetX(), tmpGeom.GetY(),
@@ -192,6 +192,19 @@ def deduplicateGeoJson(geoJsonIn, geoJsonOut='', encoding='UTF-8'):
 
     return geoJsonOut
 
+def splitVectorFileGPD(geoJson, latMin, latMax, lonMin, lonMax, encoding='UTF-8'):
+
+    insidePoly = Polygon([(lonMin, latMin), (lonMin, latMax), (lonMax, latMax), (lonMax, latMin)])
+    df = gpd.read_file(geoJson, encoding=encoding)
+
+    outputGeoJsonTrain = geoJson.replace('.geojson', 'train.geojson')
+    df[~df.intersects(insidePoly)].to_file(outputGeoJsonTrain, driver='GeoJSON', encoding=encoding)
+
+    outputGeoJsonTest = geoJson.replace('.geojson', 'test.geojson')
+    df[df.intersects(insidePoly)].to_file(outputGeoJsonTest, driver='GeoJSON', encoding=encoding)
+
+    return outputGeoJsonTrain, outputGeoJsonTest
+
 if __name__ == '__main__':
 
     createOutVectorFile = True
@@ -208,14 +221,20 @@ if __name__ == '__main__':
     if deduplicateGeoJsonFlag:
         srcVectorFile = deduplicateGeoJson(srcVectorFile)
 
-    splitGeoJson_latCutOff = -22.94 #-500 is ignore
-    splitGeoJson_lonCutOff = -43.25       #-500 is ignore
+    splitGeoJson_latMin = -22.94
+    splitGeoJson_latMax = 90
+    splitGeoJson_lonMin = -43.25
+    splitGeoJson_lonMax = 180
+
     srcVectorFileList = [[srcVectorFile, 'all']]
 
     if splitGeoJson:
-        srcVectorTrain, srcVectorTest = splitVectorFile(srcVectorFile,
-                                                        latCutOff=splitGeoJson_latCutOff,
-                                                        lonCutOff=splitGeoJson_lonCutOff)
+        srcVectorTrain, srcVectorTest = splitVectorFileGPD(srcVectorFile,
+                                                        latMin=splitGeoJson_latMin,
+                                                        latMax=splitGeoJson_latMax,
+                                                        lonMin=splitGeoJson_lonMin,
+                                                        lonMax=splitGeoJson_lonMax,
+                                                        )
 
         srcVectorFileList = [
                             [srcVectorTrain, 'train'],
