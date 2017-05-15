@@ -1,6 +1,8 @@
 # Controls the build environment
 machine:
-  
+  python:
+    version: 2.7.5
+    
 dependencies:
   override:
     # Moving to nilearn directory before performing the installation.
