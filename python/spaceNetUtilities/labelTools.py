@@ -1101,3 +1101,49 @@ def geoJsonToSBD(annotationName_cls, annotationName_inst, geoJson, rasterSource)
 
     return entry
 
+def geoJsonToMSCOCO(xmlFileName, geoJson, rasterImageName, featureIndex=0,
+                    my_annotations=[],
+                    my_images=[],
+                    my_categories=[{"id": 1, "name": "building", "supercategory": "structure"}],
+                    my_info = {"description": "This is stable 1.0 version of the Vegas SpaceNet dataset in COCO format.",
+                               "url": "none",
+                               "version": "1.0",
+                               "year": 2017,
+                               "contributor": "Lee Cohn",
+                               "date_created": "2017-04-17 00:00:00.000000"},
+                    my_licenses=[{"id": 1, "name": "Vegas-SpaceNet", "url": "none"}],
+
+
+                    im_id='',
+                    dataset ='SpaceNet',
+                    folder_name='spacenet',
+                    annotationStyle = 'DARKNET',
+                    segment=True,
+                    bufferSizePix=2.5,
+                    convertTo8Bit=True,
+                    outputPixType='Byte',
+                    outputFormat='GTiff',
+                    bboxResize=1.0):
+
+    buildingList = gT.convert_wgs84geojson_to_pixgeojson(geoJson, rasterImageName, image_id=[], pixelgeojson=[],
+                                                         only_polygons=True,
+                                                         breakMultiPolygonGeo=True, pixPrecision=2)
+
+
+    for building in buildingList:
+
+        returnArray = []
+        for i in range(0, building['polyPix'].GetPointCount()):
+            # GetPoint returns a tuple not a Geometry
+            pt = building['polyPix'].GetPoint(i)
+            returnArray.append(pt[0])
+            returnArray.append(pt[1])
+            print "%i). POINT (%d %d)" % (i, pt[0], pt[1])
+
+        feature_json_entry = {"id": featureIndex, "image_id": image_number, "category_id": 1, "segmentation": [my_list],
+                              "area": my_poly.area, "bbox": my_bbox, "iscrowd": 0}
+        my_annotations.append(feature_json_entry)
+
+        featureIndex = featureIndex + 1
+
+    return my_images, my_annotations
