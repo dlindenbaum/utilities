@@ -1,24 +1,18 @@
 # Controls the build environment
 machine:
-  python:
-    version: 2.7.12
-  environment:
-    PATH: /home/ubuntu/miniconda3/bin:$PATH
-
+  
 dependencies:
-  override:
+  pre:
     # Moving to nilearn directory before performing the installation.
     - sudo apt-get update
     - sudo apt-get install -y python-numpy
     - sudo apt-get install -y python-scipy
     - sudo apt-get install -y libjpeg-dev zlib1g libtiff5-dev libfreetype6-dev libwebp-dev libopenjpeg-dev
     - sudo pip install Pillow
-    - sudo apt-get install -y gdal-bin
+    - sudo apt-get install -y gdal-bin python-gdal
     - sudo apt-get install -y libopencv-dev python-opencv
     - sudo apt-get install -y libspatialindex-dev
-    - sudo apt-get install -y libgdal1-dev
     - sudo pip install rtree numpy scipy
-    - sudo pip install pygdal>=1.10.1.0,<=1.10.1.999
 
 # Set up the commands to run as a test (override), as well as the commands to
 # run before (pre) and after (post).
