@@ -2,7 +2,7 @@
 machine:
   
 dependencies:
-  pre:
+  override:
     # Moving to nilearn directory before performing the installation.
     - sudo apt-get update
     - sudo apt-get install -y python-numpy
