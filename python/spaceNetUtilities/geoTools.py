@@ -378,12 +378,21 @@ def geoPolygonToPixelPolygonWKT(geom, inputRaster, targetSR, geomTransform, brea
 
 def pixelWKTToGeoWKT(geomWKT, inputRaster, targetSR='', geomTransform='', breakMultiPolygonPix=False):
     # Returns  GeoCoordinateList from PixelCoordinateList
+
+
+
+    geomPix = ogr.CreateGeometryFromWkt(geomWKT)
+    geomGeoList = pixelGeomToGeoGeom(geomPix, inputRaster, targetSR=targetSR,
+                                 geomTransform=geomTransform, breakMultiPolygonPix=breakMultiPolygonPix)
+
+    return geomGeoList
+
+def pixelGeomToGeoGeom(geom, inputRaster, targetSR='', geomTransform='', breakMultiPolygonPix=False):
+
+
     if geomTransform=='':
         targetRaster = gdal.Open(inputRaster)
         geomTransform = targetRaster.GetGeoTransform()
-
-
-    geom = ogr.CreateGeometryFromWkt(geomWKT)
 
     polygonGeoBufferWKTList = []
     polygonGeoBufferList = []
@@ -397,6 +406,8 @@ def pixelWKTToGeoWKT(geomWKT, inputRaster, targetSR='', geomTransform='', breakM
                 xPix, yPix, zPix = ring.GetPoint(pIdx)
                 #xPix, yPix = latlon2pixel(lat, lon, inputRaster, targetSR, geomTransform)
                 lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR, geomTransform=geomTransform)
+
+                ringGeo.AddPoint(lon, lat)
 
 
             polygonGeo.AddGeometry(ringGeo)
@@ -491,7 +502,7 @@ def geoWKTToPixelWKT(geom, inputRaster, targetSR, geomTransform, pixPrecision=2)
 
         for poly in geom:
             polygonPix = ogr.Geometry(ogr.wkbPolygon)
-            for ring in geom:
+            for ring in poly:
                 # GetPoint returns a tuple not a Geometry
                 ringPix = ogr.Geometry(ogr.wkbLinearRing)
 
@@ -626,6 +637,10 @@ def convert_wgs84geojson_to_pixgeojson(wgs84geojson, inputraster, image_id=[], p
 
 
     return feautureList
+
+
+
+
 
 def convert_pixgwktList_to_wgs84wktList(inputRaster, wktPolygonPixList):
     ## returns # [[GeoWKT, PixWKT], ...]

@@ -655,7 +655,7 @@ def geoJsonToPASCALVOC2012(xmlFileName, geoJson, rasterImageName, im_id='',
             print(geomBufferIn.IsEmpty())
             print(geomBufferIn.IsSimple())
 
-            if not geomBufferIn.IsEmpty():
+            if geomBufferIn.GetArea()>0.0:
                 outBufFeature = ogr.Feature(featureDefn)
                 outBufFeature.SetGeometry(geomBufferOut)
 
@@ -1062,15 +1062,7 @@ def createInstanceCategories(vectorSrc):
 
 
 
-def geoJsonToSBD(annotationName_cls, annotationName_inst, geoJson, rasterSource,
-                 dataset='spacenetV2',
-                 folder_name='spacenetV2',
-                 annotationStyle='SBD',
-                 segment=True,
-                 convertTo8Bit='',
-                 outputPixType='',
-                 outputFormat=''
-                 ):
+def geoJsonToSBD(annotationName_cls, annotationName_inst, geoJson, rasterSource):
 
     #Print raster file name
     my_raster_source = rasterSource
