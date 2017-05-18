@@ -806,7 +806,7 @@ def clipShapeFile(shapeSrc, outputFileName, polyToCut, minpartialPerc=0.0, shape
     outGeoJSon = os.path.splitext(outputFileName)[0] + '.geojson'
     if not os.path.exists(os.path.dirname(outGeoJSon)):
         os.makedirs(os.path.dirname(outGeoJSon))
-
+    print(outGeoJSon)
     outDriver = ogr.GetDriverByName("geojson")
     if os.path.exists(outGeoJSon):
         outDriver.DeleteDataSource(outGeoJSon)
