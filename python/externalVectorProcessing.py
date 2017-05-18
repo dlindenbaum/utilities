@@ -10,9 +10,9 @@ import glob
 
 def buildTindex(rasterFolder, rasterExtention='.tif'):
     rasterList = glob.glob(os.path.join(rasterFolder, '*{}'.format(rasterExtention)))
-    print(rasterList)
+    #print(rasterList)
 
-    print(os.path.join(rasterFolder, '*{}'.format(rasterExtention)))
+    #print(os.path.join(rasterFolder, '*{}'.format(rasterExtention)))
 
     memDriver = ogr.GetDriverByName('MEMORY')
     gTindex = memDriver.CreateDataSource('gTindex')
@@ -54,7 +54,7 @@ def createTiledGeoJsonFromSrc(rasterFolderLocation, vectorSrcFile, geoJsonOutput
     else:
         gTindex = ogr.Open(rasterTileIndex,0)
         gTindexLayer = gTindex.GetLayer()
-
+    print(vectorSrcFile)
     shapeSrc = ogr.Open(vectorSrcFile,0)
     chipSummaryList = []
     for feature in gTindexLayer:
@@ -77,7 +77,7 @@ def createTiledGeoJsonFromSrc(rasterFolderLocation, vectorSrcFile, geoJsonOutput
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='This code will push a new Vector Source into already tiled imagery')
     parser.add_argument("-imgDir", "--imgDir", type=str,
                         help="Directory of Raster Images")
     parser.add_argument("-vecSrc", "--vectorSrcFile", type=str,
@@ -93,7 +93,8 @@ if __name__ == "__main__":
                         default='.tif')
 
     parser.add_argument("-o", "--outputCSV", type=str,
-                        help="Output file name and location for truth summary CSV equivalent to SpacenetV2 competition")
+                        help="Output file name and location for truth summary CSV equivalent to SpacenetV2 competition",
+                        default='')
     parser.add_argument("-pixPrecision", "--pixelPrecision", type=int,
                         help="Number of decimal places to include for pixel, uses round(xPix, pixPrecision)"
                              "Default = 2",
@@ -110,10 +111,10 @@ if __name__ == "__main__":
 
 
     rasterFolderLocation = args.imgDir
-    vectorSrcFile = args.imgDir
+    vectorSrcFile = args.vectorSrcFile
     vectorPrefix = args.vectorPrefix
     rasterPrefix = args.rasterPrefix
-    pixPrecision = args.pixPrecision
+    pixPrecision = args.pixelPrecision
     createProposalFile = args.CreateProposalFile
     rasterFileExtension = args.rasterExtension
 
@@ -122,18 +123,21 @@ if __name__ == "__main__":
         rasterFolderBaseName = os.path.basename(os.path.dirname(rasterFolderLocation))
 
     geoJsonOutputDirectory = os.path.join(os.path.dirname(vectorSrcFile), rasterFolderBaseName)
+    print geoJsonOutputDirectory
+    if not os.path.exists(geoJsonOutputDirectory):
+        os.makedirs(geoJsonOutputDirectory)
     chipSummaryList = createTiledGeoJsonFromSrc(rasterFolderLocation, vectorSrcFile, geoJsonOutputDirectory, rasterTileIndex='',
                               geoJsonPrefix=vectorPrefix, rasterFileExtenstion=rasterFileExtension,
                               rasterPrefixToReplace=rasterPrefix
                               )
 
-
-    outputCSVFileName = geoJsonOutputDirectory+"OSM_Proposal.csv"
-    lT.createCSVSummaryFile(chipSummaryList, outputCSVFileName,
-                                replaceImageID=rasterPrefix+"_",
-                                pixPrecision=pixPrecision,
-                                createProposalsFile=createProposalFile
-                                )
+    if args.outputCSV != '':
+        outputCSVFileName = args.outputCSV
+        lT.createCSVSummaryFile(chipSummaryList, outputCSVFileName,
+                                    replaceImageID=rasterPrefix+"_",
+                                    pixPrecision=pixPrecision,
+                                    createProposalsFile=createProposalFile
+                                    )
 
 
 
