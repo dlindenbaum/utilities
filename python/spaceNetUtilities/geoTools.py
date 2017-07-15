@@ -4,8 +4,19 @@ import os
 import csv
 import subprocess
 import math
+import geopandas as gpd
+import shapely
+from shapely.geometry import Point
+from pyproj import Proj, transform
+from fiona.crs import from_epsg
+from shapely.geometry.polygon import Polygon
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.linestring import LineString
+from shapely.geometry.multilinestring import MultiLineString
 try:
     import rtree
+    import centerline
+    import osmnx
 except:
     print("rtree not installed, Will break evaluation code")
 
@@ -396,67 +407,68 @@ def pixelGeomToGeoGeom(geom, inputRaster, targetSR='', geomTransform='', breakMu
 
     polygonGeoBufferWKTList = []
     polygonGeoBufferList = []
-    if geom.GetGeometryName() == 'POLYGON':
-        polygonGeo = ogr.Geometry(ogr.wkbPolygon)
-        for ring in geom:
-            # GetPoint returns a tuple not a Geometry
-            ringGeo = ogr.Geometry(ogr.wkbLinearRing)
-
-            for pIdx in xrange(ring.GetPointCount()):
-                xPix, yPix, zPix = ring.GetPoint(pIdx)
-                #xPix, yPix = latlon2pixel(lat, lon, inputRaster, targetSR, geomTransform)
-                lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR, geomTransform=geomTransform)
-
-                ringGeo.AddPoint(lon, lat)
-
-
-            polygonGeo.AddGeometry(ringGeo)
-        polygonGeoBuffer = polygonGeo.Buffer(0.0)
-        polygonGeoBufferList.append([polygonGeoBuffer, geom])
-
-    elif geom.GetGeometryName() == 'MULTIPOLYGON':
-
-        for poly in geom:
+    if geom:
+        if geom.GetGeometryName() == 'POLYGON':
             polygonGeo = ogr.Geometry(ogr.wkbPolygon)
-            for ring in poly:
+            for ring in geom:
                 # GetPoint returns a tuple not a Geometry
                 ringGeo = ogr.Geometry(ogr.wkbLinearRing)
 
                 for pIdx in xrange(ring.GetPointCount()):
                     xPix, yPix, zPix = ring.GetPoint(pIdx)
-                    # xPix, yPix = latlon2pixel(lat, lon, inputRaster, targetSR, geomTransform)
-                    lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR,
-                                               geomTransform=geomTransform)
+                    #xPix, yPix = latlon2pixel(lat, lon, inputRaster, targetSR, geomTransform)
+                    lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR, geomTransform=geomTransform)
+
                     ringGeo.AddPoint(lon, lat)
+
 
                 polygonGeo.AddGeometry(ringGeo)
             polygonGeoBuffer = polygonGeo.Buffer(0.0)
-            if breakMultiPolygonPix:
-                polygonGeoBufferList.append([polygonGeoBuffer, poly])
-            else:
-                polygonGeoBufferList.append([polygonGeoBuffer, geom])
+            polygonGeoBufferList.append([polygonGeoBuffer, geom])
+
+        elif geom.GetGeometryName() == 'MULTIPOLYGON':
+
+            for poly in geom:
+                polygonGeo = ogr.Geometry(ogr.wkbPolygon)
+                for ring in poly:
+                    # GetPoint returns a tuple not a Geometry
+                    ringGeo = ogr.Geometry(ogr.wkbLinearRing)
+
+                    for pIdx in xrange(ring.GetPointCount()):
+                        xPix, yPix, zPix = ring.GetPoint(pIdx)
+                        # xPix, yPix = latlon2pixel(lat, lon, inputRaster, targetSR, geomTransform)
+                        lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR,
+                                                   geomTransform=geomTransform)
+                        ringGeo.AddPoint(lon, lat)
+
+                    polygonGeo.AddGeometry(ringGeo)
+                polygonGeoBuffer = polygonGeo.Buffer(0.0)
+                if breakMultiPolygonPix:
+                    polygonGeoBufferList.append([polygonGeoBuffer, poly])
+                else:
+                    polygonGeoBufferList.append([polygonGeoBuffer, geom])
 
 
-    elif geom.GetGeometryName() == 'LINESTRING':
-        lineGeo = ogr.Geometry(ogr.wkbLineString)
-        for pIdx in xrange(geom.GetPointCount()):
-            xPix, yPix, zPix = geom.GetPoint(pIdx)
-            lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR,
-                                       geomTransform=geomTransform)
-            lineGeo.AddPoint(lon, lat)
+        elif geom.GetGeometryName() == 'LINESTRING':
+            lineGeo = ogr.Geometry(ogr.wkbLineString)
+            for pIdx in xrange(geom.GetPointCount()):
+                xPix, yPix, zPix = geom.GetPoint(pIdx)
+                lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR,
+                                           geomTransform=geomTransform)
+                lineGeo.AddPoint(lon, lat)
 
-        polygonGeoBufferList.append([lineGeo, geom])
+            polygonGeoBufferList.append([lineGeo, geom])
 
-    elif geom.GetGeometryName() == 'POINT':
-        pointGeo = ogr.Geometry(ogr.wkbPoint)
+        elif geom.GetGeometryName() == 'POINT':
+            pointGeo = ogr.Geometry(ogr.wkbPoint)
 
-        for pIdx in xrange(geom.GetPointCount()):
-            xPix, yPix, zPix = geom.GetPoint(pIdx)
-            lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR,
-                                       geomTransform=geomTransform)
-            pointGeo.AddPoint(lon, lat)
+            for pIdx in xrange(geom.GetPointCount()):
+                xPix, yPix, zPix = geom.GetPoint(pIdx)
+                lon, lat = pixelToGeoCoord(xPix, yPix, inputRaster=inputRaster, targetSR=targetSR,
+                                           geomTransform=geomTransform)
+                pointGeo.AddPoint(lon, lat)
 
-        polygonGeoBufferList.append([pointGeo, geom])
+            polygonGeoBufferList.append([pointGeo, geom])
 
 
 
@@ -1195,5 +1207,137 @@ def createMaskedMosaic(input_raster, output_raster, outline_file):
                      '-co', 'PHOTOMETRIC=YCBCR',
                      '-co', 'TILED=YES'])
 
+
+
+def explodeGeoPandasFrame(inGDF):
+
+    #This function splits entries with MultiPolygon geometries into Polygon Geometries
+
+    outdf = gpd.GeoDataFrame(columns=inGDF.columns)
+    for idx, row in inGDF.iterrows():
+        if type(row.geometry) == Polygon:
+            outdf = outdf.append(row,ignore_index=True)
+        if type(row.geometry) == MultiPolygon:
+            multdf = gpd.GeoDataFrame(columns=inGDF.columns)
+            recs = len(row.geometry)
+            multdf = multdf.append([row]*recs,ignore_index=True)
+            for geom in range(recs):
+                multdf.loc[geom,'geometry'] = row.geometry[geom]
+            multdf.head()
+            outdf = outdf.append(multdf,ignore_index=True)
+
+        if type(row.geometry) == LineString:
+            outdf = outdf.append(row, ignore_index=True)
+
+        if type(row.geometry) == MultiLineString:
+            multdf = gpd.GeoDataFrame(columns=inGDF.columns)
+            recs = len(row.geometry)
+            multdf = multdf.append([row]*recs,ignore_index=True)
+            for geom in range(recs):
+                multdf.loc[geom,'geometry'] = row.geometry[geom]
+            multdf.head()
+            outdf = outdf.append(multdf,ignore_index=True)
+
+
+    outdf.crs = inGDF.crs
+
+
+    return outdf
+
+def calculateCenterLineFromGeopandasPolygon(inGDF,
+                                            centerLineDistanceInput_Meters=5,
+                                            simplifyDistanceMeters=5,
+                                            projectToUTM=True):
+
+    # project To UTM for GeoSpatial Measurements
+    if projectToUTM:
+        tmpGDF = osmnx.project_gdf(inGDF)
+    else:
+        tmpGDF = inGDF
+
+    # Explode GeoPandas
+    tmpGDF1 = explodeGeoPandasFrame(tmpGDF)
+    tmpGDF1.crs = tmpGDF.crs
+    gdf_centerline_utm = tmpGDF1
+
+
+    # Loop through Geomertries to calculate Centerline for Each Polygon
+    listOfGeoms = tmpGDF1['geometry'].values
+    lineStringList = []
+
+    for geom in listOfGeoms:
+        tmpGeom = centerline.Centerline(geom, centerLineDistanceInput_Meters)
+        lineStringList.append(tmpGeom.createCenterline())
+
+    gdf_centerline_utm['geometry'] = lineStringList
+
+    lineList = gdf_centerline_utm['geometry'].values
+    lineSimplifiedList = []
+
+    for geo in lineList:
+
+
+        if geo.type == 'MultiLineString':
+
+            geoNew = shapely.ops.linemerge(geo).simplify(simplifyDistanceMeters, preserve_topology=False)
+
+        else:
+
+            geoNew = geo.simplify(simplifyDistanceMeters, preserve_topology=False)
+
+        lineSimplifiedList.append(geoNew)
+
+    simplifiedGdf_utm = gpd.GeoDataFrame({'geometry': lineSimplifiedList})
+    simplifiedGdf_utm.crs = tmpGDF.crs
+    print (tmpGDF.crs)
+
+    if projectToUTM:
+        gdf_simple_centerline = simplifiedGdf_utm.to_crs(inGDF.crs)
+    else:
+        gdf_simple_centerline = simplifiedGdf_utm
+
+
+    return gdf_simple_centerline
+
+
+def calculateCenterLineFromOGR(inputSrcFile, centerLineDistanceInput_Meters=5, outputShpFile=''):
+
+    inGDF = gpd.read_file(inputSrcFile)
+    outGDF = calculateCenterLineFromGeopandasPolygon(inGDF, centerLineDistanceInput_Meters=centerLineDistanceInput_Meters)
+
+    if outputShpFile != '':
+        outGDF.to_file(outputShpFile)
+
+
+    return outGDF
+
+
+def createBufferGeoPandas(inGDF, bufferDistanceMeters=5, bufferRoundness=1, projectToUTM=True):
+    # Calculate CenterLine
+    ## Define Buffer Constraints
+
+
+    # Transform gdf Roadlines into UTM so that Buffer makes sense
+    if projectToUTM:
+        tmpGDF = osmnx.project_gdf(inGDF)
+    else:
+        tmpGDF = inGDF
+
+    gdf_utm_buffer = tmpGDF
+
+    # perform Buffer to produce polygons from Line Segments
+    gdf_utm_buffer['geometry'] = tmpGDF.buffer(bufferDistanceMeters,
+                                                bufferRoundness)
+
+    gdf_utm_dissolve = gdf_utm_buffer.dissolve(by='class')
+    gdf_utm_dissolve.crs = gdf_utm_buffer.crs
+
+    if projectToUTM:
+        gdf_buffer = gdf_utm_dissolve.to_crs(inGDF.crs)
+    else:
+        gdf_buffer = gdf_utm_dissolve
+
+
+    return gdf_buffer
 
 
