@@ -5,7 +5,7 @@ import os
 import subprocess
 import geopandas as gpd
 from geopandas.geoseries import Polygon
-
+import osmnx as ox
 def returnBoundBoxM(tmpGeom, metersRadius=50):
     poly = gT.createPolygonFromCenterPoint(tmpGeom.GetX(), tmpGeom.GetY(),
                                     metersRadius)
@@ -17,7 +17,56 @@ def returnBoundBoxM(tmpGeom, metersRadius=50):
 
     return polyEnv
 
+def createPolygonShapeFileGPD(srcVectorFile, pointOfInterestList, outVectorFile=''):
+    gdfOrig = gpd.read_file(srcVectorFile)
 
+    firstKey = True
+
+
+
+    ## Iterage through keys for valid points of interest, These correspond to OSM Tags such as Power or Places.
+    for pointOfInterestKey in pointOfInterestList.keys():
+        ## Select from Vector File all rows where Point of Interest Columns is not an empty String
+        gdfKey = gdfOrig[gdfOrig[pointOfInterestKey] != '']
+
+        # Get list of defined features in the set Tag List, i.e. power=objectName
+
+        objectNameList = pointOfInterestList[pointOfInterestKey].keys()
+
+        # iterate through object names to apply specific actions with regard to the object like bounding box size.
+
+        for objectName in objectNameList:
+            # select only those objects where the key=object i.e power=tower
+            gdfPOITemp = gdfKey[gdfKey[pointOfInterestKey] == objectName]
+
+           # "compensator": {
+           #                    "featureIdNum": 1,
+           #                    "featureChipScaleM": 200,
+           #                    "featureBBoxSizeM": 5
+           #                },
+            # project subset to UTM so that actions can be done with regard to meters
+            gdfPOITempUTM = ox.project_gdf(gdfPOITemp)
+            # buffer geometry to create circle around point with x meters
+            gdfPOITempUTM.geometry=gdfPOITempUTM.buffer(pointOfInterestList[pointOfInterestKey][objectName]['featureBBoxSizeM'])
+            # calculate the envelope of the circle to create a bounding box for each object
+            gdfPOITempUTM.geometry=gdfPOITempUTM.envelope
+
+            # reporject to wgs84 (lat long)
+            gdfPOITemp = ox.project_gdf(gdfPOITempUTM, to_latlong=True)
+            # assign a name to spacefeat for future use in the vector: "power:tower"
+            gdfPOITemp['spacefeat']=pointOfInterestList[pointOfInterestKey][objectName]['spaceFeatureName']
+
+            # if first key, create final gdf
+            if firstKey:
+                gdfFinal = gdfPOITemp
+            else:
+                # else add new to end of gdfFianl
+                gdfFinal = gdfFinal.concat(gdfPOITemp)
+
+    if outVectorFile != '':
+        gdfFinal.to_file(outVectorFile)
+
+    return gdfFinal
 
 def createPolygonShapeFile(srcVectorFile, outVectorFile, pointOfInterestList):
 
@@ -69,8 +118,8 @@ def createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, s
                            className='',
                            outputDirectory='',
                            seperateImageFolders=False,
-                           minPartialToInclue = 0.70
-                           ):
+                           minPartialToInclue = 0.70,
+                           fieldName='spacefeat'):
 
 
     chipSummaryList = []
@@ -249,8 +298,10 @@ if __name__ == '__main__':
     # This list will take any type of Raster supported by GDAL
     # VRTs are nice becasuse they create a virtual mosaic and allow for images covering a wide area to be considered one
     # In this case gdalbuildvrt can be run in a folder of tifs to create the VRT to be handed for processing
-    rasterFileList = [['/path/To/Pan-Band.vrt', 'Pan'],
-                      ['/path/To/8-BandVRT.vrt', '8band']
+    rasterFileList = [['/path/To/Pan-VRT.vrt', 'PAN'],
+                      ['/path/To/MUL-VRT.vrt', 'MUL']
+                      ['/path/To/RGB-PanSharpen-VRT.vrt', 'RGB-PanSharpen']
+                      ['/path/To/MUL-PanSharpen-VRT.vrt', 'MUL-PanSharpen']
                       ]
 
 
@@ -269,10 +320,9 @@ if __name__ == '__main__':
 
     # create Polygon of Interet from Point of Interest File.  This will create bounding boxes of specified size.
     for srcVectorFile, folderType in srcVectorFileList:
-        outVectorFile = srcVectorFile.replace('.geojson', 'poly.geojson')
+        outVectorFile = srcVectorFile.replace('.geojson', 'poly.shp')
         if createOutVectorFile:
-            createPolygonShapeFile(srcVectorFile, outVectorFile, pointOfInterestList)
-
+            createPolygonShapeFileGPD(srcVectorFile, pointOfInterestList, outVectorFile=outVectorFile)
 
         outputDirectoryTmp = os.path.join(outputDirectory, folderType)
 
@@ -282,10 +332,15 @@ if __name__ == '__main__':
     # create Folder Structure to place files into.
 
         for rasterFile in rasterFileList:
-            for featureName in pointOfInterestList.keys():
-                tmpPath = os.path.join(outputDirectoryTmp, rasterFile[1], featureName.replace(' ', ''))
+            for keyName in pointOfInterestList.keys():
+                tmpPath = os.path.join(outputDirectoryTmp, rasterFile[1], keyName.replace(' ', ''))
                 if not os.path.exists(tmpPath):
                     os.makedirs(tmpPath)
+
+                for objectName in pointOfInterestList[keyName].keys():
+                    tmpPath = os.path.join(outputDirectoryTmp, rasterFile[1], keyName.replace(' ', ''), objectName.replace(" ",""))
+                    if not os.path.exists(tmpPath):
+                        os.makedirs(tmpPath)
 
         # create Processed Point of Interest Data.
         createProcessedPOIData(srcVectorFile, pointOfInterestList, rasterFileList, shapeFileSrcList,
