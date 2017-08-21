@@ -1,0 +1,83 @@
+{
+"power":
+  {
+    "compensator": {
+      "featureIdNum": 1,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 5,
+      "spaceFeatureName": "power:compensator"
+    },
+    "converter": {
+      "featureIdNum": 2,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 5,
+      "spaceFeatureName": "power:converter"
+    },
+    "heliostat": {
+      "featureIdNum": 3,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 5,
+      "spaceFeatureName": "power:heliostat"
+    },
+    "insulator": {
+      "featureIdNum": 4,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 10,
+      "spaceFeatureName": "power:insualtor"
+    },
+    "pole": {
+      "featureIdNum": 5,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 5,
+      "spaceFeatureName": "power:pole"
+    },
+    "portal": {
+      "featureIdNum": 6,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 10,
+      "spaceFeatureName": "power:portal"
+    },
+    "catenary_mast": {
+      "featureIdNum": 7,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 10,
+      "spaceFeatureName": "power:catenary_mast"
+    },
+    "substation": {
+      "featureIdNum": 8,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 25,
+      "spaceFeatureName": "power:substation"
+    },
+    "switch": {
+      "featureIdNum": 9,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 5,
+      "spaceFeatureName": "power:switch"
+    },
+    "terminal": {
+      "featureIdNum": 10,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 5,
+      "spaceFeatureName": "power:terminal"
+    },
+    "tower": {
+      "featureIdNum": 11,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 10,
+      "spaceFeatureName": "power:tower"
+    },
+    "transformer": {
+      "featureIdNum": 12,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 10,
+      "spaceFeatureName": "power:transformer"
+    },
+    "unknown":  {
+      "featureIdNum": 13,
+      "featureChipScaleM": 200,
+      "featureBBoxSizeM": 10,
+      "spaceFeatureName": "power:unknown"
+    }
+  }
+}

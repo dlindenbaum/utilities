@@ -5,7 +5,8 @@ import os
 import subprocess
 import geopandas as gpd
 from geopandas.geoseries import Polygon
-import osmnx as ox
+import geopandas_osm
+
 def returnBoundBoxM(tmpGeom, metersRadius=50):
     poly = gT.createPolygonFromCenterPoint(tmpGeom.GetX(), tmpGeom.GetY(),
                                     metersRadius)
@@ -16,15 +17,29 @@ def returnBoundBoxM(tmpGeom, metersRadius=50):
 
 
     return polyEnv
+def createPolygonShapeFileFromOSM(polyBounds, pointOfInterestList, outVectorFile='', debug=True):
+    gdfOSM = gpd.GeoDataFrame([])
+    for pointOfInterestKey in pointOfInterestList.keys():
+        gdfPOITemp = geopandas_osm.osm.query_osm('way', polyBounds, recurse='down', tags='{}'.format(pointOfInterestKey))
+        gdfOSM = gdfOSM.concat(gdfPOITemp)
 
-def createPolygonShapeFileGPD(srcVectorFile, pointOfInterestList, outVectorFile=''):
+    gdfFinal = createPolygonShapeFileGPD(pointOfInterestList, gdfOSM, outVectorFile=outVectorFile)
+
+    return gdfFinal
+
+
+def createPolygonShapeFileFromShapefile(srcVectorFile, pointOfInterestList, outVectorFile=''):
 
     gdfOrig = gpd.read_file(srcVectorFile)
+    gdfFinal = createPolygonShapeFileGPD(pointOfInterestList, gdfOrig, outVectorFile=outVectorFile)
+
+    return gdfFinal
+
+
+
+def createPolygonShapeFileGPD(pointOfInterestList, gdfOrig, outVectorFile=''):
 
     firstKey = True
-
-
-
     ## Iterage through keys for valid points of interest, These correspond to OSM Tags such as Power or Places.
     for pointOfInterestKey in pointOfInterestList.keys():
         ## Select from Vector File all rows where Point of Interest Columns is not an empty String
@@ -60,8 +75,9 @@ def createPolygonShapeFileGPD(srcVectorFile, pointOfInterestList, outVectorFile=
             # if first key, create final gdf
             if firstKey:
                 gdfFinal = gdfPOITemp
+                firstKey = False
             else:
-                # else add new to end of gdfFianl
+                # else add new to end of gdfFinal
                 gdfFinal = gdfFinal.concat(gdfPOITemp)
 
     if outVectorFile != '':
@@ -259,6 +275,9 @@ def splitVectorFileGPD(geoJson, latMin, latMax, lonMin, lonMax, encoding='UTF-8'
 
 
 
+
+
+
 if __name__ == '__main__':
 
     createOutVectorFile = True
@@ -269,7 +288,7 @@ if __name__ == '__main__':
     featureDescriptionJson = '../configFiles/OSM_Power.json'
     className = 'POIAll'
     seperateImageFolders = False
-    splitGeoJson = True
+    splitGeoJson = False
     deduplicateGeoJsonFlag = True
 
     if deduplicateGeoJsonFlag:
@@ -282,18 +301,18 @@ if __name__ == '__main__':
 
     srcVectorFileList = [[srcVectorFile, 'all']]
 
-    if splitGeoJson:
-        srcVectorTrain, srcVectorTest = splitVectorFileGPD(srcVectorFile,
-                                                        latMin=splitGeoJson_latMin,
-                                                        latMax=splitGeoJson_latMax,
-                                                        lonMin=splitGeoJson_lonMin,
-                                                        lonMax=splitGeoJson_lonMax,
-                                                        )
+    #if splitGeoJson:
+    #    srcVectorTrain, srcVectorTest = splitVectorFileGPD(srcVectorFile,
+    #                                                    latMin=splitGeoJson_latMin,
+    #                                                    latMax=splitGeoJson_latMax,
+    #                                                    lonMin=splitGeoJson_lonMin,
+    #                                                    lonMax=splitGeoJson_lonMax,
+    #                                                    )
 
-        srcVectorFileList = [
-                            [srcVectorTrain, 'train'],
-                            [srcVectorTest, 'test']
-                            ]
+    #    srcVectorFileList = [
+    #                        [srcVectorTrain, 'train'],
+    #                        [srcVectorTest, 'test']
+    #                        ]
 
 
 

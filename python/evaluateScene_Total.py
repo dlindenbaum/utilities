@@ -1,5 +1,5 @@
 from spaceNetUtilities import evalTools as eT
-from spaceNetUtilities import geoTools as gT
+from spaceNetUtilities import geoToolsGPD as gT
 import numpy as np
 import csv
 import multiprocessing
@@ -7,7 +7,9 @@ import time
 import argparse
 import os
 import glob
+import geopandas as gpd
 from osgeo import ogr, osr, gdal
+
 
 def writeAOISummaryToCSV(resultsDict,csvwriter):
 
@@ -35,42 +37,16 @@ def writeAOISummaryToCSV(resultsDict,csvwriter):
     #                'PerImageStatsResultList': result_list,
     #                'OutputSummaryFile': resultsOutputFile}
 
-def writePerChipToCSV(resultsDictList, csvwriter):
-    resultsDict = resultsDictList[0]
-    csvwriter.writerow(['ImageId', 'F1Score', 'True Positive Count', 'False Positive Count', 'False Negative Count'])
-    for result in resultsDict['PerImageStatsResultList']:
-        tmpList = [result[1]]
-        tmpList.extend(result[0])
-        csvwriter.writerow(tmpList)
 
 
 
 
 
-def writeResultsToScreen(resultsDict):
-
-    print('AOI of Interest', resultsDict['AOI_Name'])
-    print('True_Pos_Total', resultsDict['TruePositiveTotal'])
-    print('False_Pos_Total', resultsDict['FalsePositiveTotal'])
-    print('False_Neg_Total', resultsDict['FalseNegativeTotal'])
-    print('F1ScoreTotal', resultsDict['F1ScoreTotal'])
-
-
-# resultsDict = {'AOI_Name': aoiName
-#                    'TruthFile': truth_fp,
-#                'ProposalFile': test_fp,
-#                'F1ScoreTotal': F1ScoreTotal,
-#                'PrecisionTotal': precision,
-#                'RecalTotal': recall,
-#                'TruePositiveTotal': true_pos_total,
-#                'FalsePositiveTotal': false_pos_total,
-#                'FalseNegativeTotal': false_neg_total,
-#                'PerImageStatsResultList': result_list,
-#                'OutputSummaryFile': resultsOutputFile}
 
 
 
-def evaluateSpaceNetSolution(summaryTruthFile, summaryProposalFile, resultsOutputFile='', processgeoJson=False,
+
+def evaluateSpaceNetSolution_Total(summaryTruthFile, summaryProposalFile, resultsOutputFile='',
                              useParallelProcessing=False, minPolygonSize=0,
                              iouThreshold=0.5,
                              AOIList=['Total',
@@ -78,7 +54,8 @@ def evaluateSpaceNetSolution(summaryTruthFile, summaryProposalFile, resultsOutpu
                                       'AOI_2_Vegas',
                                       'AOI_3_Paris',
                                       'AOI_4_Shanghai',
-                                      'AOI_5_Khartoum']
+                                      'AOI_5_Khartoum'],
+                                   debug=False
                              ):
 
     truth_fp = summaryTruthFile
@@ -99,54 +76,40 @@ def evaluateSpaceNetSolution(summaryTruthFile, summaryProposalFile, resultsOutpu
 
     t0 = time.time()
     # Start Ingest Of Truth and Test Case
-    if processgeoJson:
-        sol_polys = gT.import_summary_geojson(truth_fp, removeNoBuildings=False)
-        prop_polys = gT.import_summary_geojson(test_fp)
-        polyFlag = 'poly'
-    else:
-        sol_polys = gT.readwktcsv(truth_fp, removeNoBuildings=False)
-        prop_polys = gT.readwktcsv(test_fp, groundTruthFile=False)
-        polyFlag = 'polyPix'
+
+    truthDF = gpd.read_file(truth_fp)
+    testDF = gpd.read_file(test_fp)
+    polyFlag = 'poly'
+
+    ## TODO projectToUTM
+
+    truthDF = truthDF.loc[truthDF.area >= minPolygonSize]
 
     t1 = time.time()
     total = t1 - t0
-    print('time of ingest: ', total)
+    if debug:
+        print('time of ingest: ', total)
 
-    # inspect polygons to ensure they are not too small
-    sol_polys  = [item for item in sol_polys if item["ImageId"] > 0 and
-                                item[polyFlag].GetArea()> minPolygonSize]
-    prop_polys = [item for item in prop_polys if item["ImageId"] > 0 ]
 
-    # Speed up search by preprocessing ImageId and polygonIds
 
-    test_image_ids = [item['ImageId'] for item in prop_polys if item['ImageId'] > 0]
-    test_image_ids2 = [item['ImageId'] for item in sol_polys if item['ImageId'] > 0]
-    test_image_ids.extend(test_image_ids2)
-    test_image_ids = set(test_image_ids)
-
-    prop_polysIdList = np.asarray([item['ImageId'] for item in prop_polys if item["ImageId"] >= 0 and \
-                                   item['BuildingId'] != -1])
-    prop_polysPoly = np.asarray([item[polyFlag] for item in prop_polys if item["ImageId"] >= 0 and \
-                                 item['BuildingId'] != -1])
-
-    sol_polysIdsList = np.asarray([item['ImageId'] for item in sol_polys if item["ImageId"] >= 0 and \
-                                   item['BuildingId'] != -1])
-    sol_polysPoly = np.asarray([item[polyFlag] for item in sol_polys if item["ImageId"] >= 0 and \
-                                item['BuildingId'] != -1])
+    prop_polysPoly = testDF.geometry.values
+    sol_polysPoly = truthDF.geometry.values
     bad_count = 0
     F1ScoreList = []
     cpu_count = min(multiprocessing.cpu_count(), max_cpu)
-    print('{}'.format(max_cpu))
+    if debug:
+        print('{}'.format(max_cpu))
     p = multiprocessing.Pool(processes=cpu_count)
     ResultList = []
 
-    eval_function_input_list = eT.create_eval_function_input((test_image_ids,
-                                                              (prop_polysIdList, prop_polysPoly),
-                                                              (sol_polysIdsList, sol_polysPoly)))
+    truthIndex = truthDF.sindex
+    eval_function_input_list = [['ImageId', prop_polysPoly, sol_polysPoly, truthIndex]]
+
 
     # Calculate Values
     t3 = time.time()
-    print('time For DataCreation {}s'.format(t3 - t1))
+    if debug:
+        print('time For DataCreation {}s'.format(t3 - t1))
 
     # result_list = p.map(eT.evalfunction, eval_function_input_list)
     if parallel == False:
@@ -375,7 +338,7 @@ if __name__ == "__main__":
                'AOI_4_Shanghai',
                'AOI_5_Khartoum']
     resultsOutputFile = args.resultsOutputFile
-    summaryDict = evaluateSpaceNetSolution(args.summaryTruthFile,
+    summaryDict = evaluateSpaceNetSolution_Total(args.summaryTruthFile,
                                            args.summaryProposalFile,
                                            resultsOutputFile=resultsOutputFile,
                                            processgeoJson=args.geoJson,

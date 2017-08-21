@@ -147,13 +147,15 @@ def geomGeo2geomPixel(geom, affineObject=[], input_raster='', gdal_geomTransform
         else:
             affineObject = af.Affine.from_gdal(gdal_geomTransform)
 
+    affineObjectInv = ~affineObject
+
     geomTransform = shapely.affinity.affine_transform(geom,
-                                      [affineObject.a,
-                                       affineObject.b,
-                                       affineObject.d,
-                                       affineObject.e,
-                                       affineObject.xoff,
-                                       affineObject.yoff]
+                                      [affineObjectInv.a,
+                                       affineObjectInv.b,
+                                       affineObjectInv.d,
+                                       affineObjectInv.e,
+                                       affineObjectInv.xoff,
+                                       affineObjectInv.yoff]
                                       )
 
     return geomTransform
@@ -171,7 +173,7 @@ def geomPixel2geomGeo(geom, affineObject=[], input_raster='', gdal_geomTransform
         else:
             affineObject = af.Affine.from_gdal(gdal_geomTransform)
 
-    affineObject = affineObject.__invert__()
+
     geomTransform = shapely.affinity.affine_transform(geom,
                                                       [affineObject.a,
                                                        affineObject.b,
@@ -255,28 +257,11 @@ def create_rtreefromdict(buildinglist):
 
     return index
 
-def data_gen_rtree(poly_list):
-
-    for i, poly in enumerate(poly_list):
-
-        yield (i, poly.bounds)
-
-
-def create_rtree_from_poly(poly_list, shapely=True):
-    # create index
-    index = rtree.index.Index(interleaved=shapely)
-    index.Rtree('bulk', data_gen_rtree(poly_list))
-    #for idx, building in enumerate(poly_list):
-    #    index.insert(idx, building.GetEnvelope())
-
-    return index
-
-
 def search_rtree(test_building, index):
     # input test shapely polygon geometry  and rtree index
     if test_building.geom_type == 'Polygon' or \
                     test_building.geom_type == 'MultiPolygon':
-        fidlist = index.intersection(test_building.bounds)
+        fidlist = list(index.intersection(test_building.bounds))
     else:
         fidlist = []
 
@@ -299,6 +284,26 @@ def utm_isNorthern(latitude):
     else:
         return 1
 
+def createUTMandLatLonCrs(polyGeom):
+
+    polyCentroid = polyGeom.centroid
+    utm_zone = utm_getZone(polyCentroid.x)
+    is_northern = utm_isNorthern(polyCentroid.y)
+    if is_northern:
+        directionIndicator = '+north'
+    else:
+        directionIndicator = '+south'
+
+    utm_crs = {'datum': 'NAD83',
+               'ellps': 'GRS80',
+               'proj': 'utm',
+               'zone': utm_zone,
+               'units': 'm'}
+
+    latlong_crs = {'init': 'epsg:4326'}
+
+    return utm_crs, latlong_crs
+
 def createUTMTransform(polyGeom):
 
     polyCentroid = polyGeom.centroid
@@ -315,6 +320,7 @@ def createUTMTransform(polyGeom):
         pyproj.Proj("+proj=utm +zone={} {} +ellps=WGS84 +datum=WGS84 +units=m +no_defs".format(utm_zone,
                                                                                                directionIndicator))
     )
+
 
     projectTO_WGS = partial(
         pyproj.transform,
@@ -345,13 +351,33 @@ def getRasterExtent(srcImage):
            srcImage.bounds.right, \
            srcImage.bounds.bottom
 
-def createPolygonFromCenterPoint(cX,cY, radiusMeters, transform_WGS_To_UTM_Flag=True):
+def createPolygonFromCenterPointXY(cX,cY, radiusMeters, transform_WGS_To_UTM_Flag=True):
 
 
     point = Point(cX, cY)
 
+    return createPolygonFromCenterPoint(point, radiusMeters, transform_WGS_To_UTM_Flag=True)
+
+def createPolygonFromCenterPoint(point, radiusMeters, transform_WGS_To_UTM_Flag=True):
+
+
     transform_WGS84_To_UTM, transform_UTM_To_WGS84 = createUTMTransform(point)
     if transform_WGS_To_UTM_Flag:
+        point = shapely.ops.tranform(transform_WGS84_To_UTM, point)
+
+    poly = point.Buffer(radiusMeters)
+
+    if transform_WGS_To_UTM_Flag:
+        poly = shapely.ops.tranform(transform_UTM_To_WGS84, poly)
+
+    return poly
+
+
+def createPolygonFromCentroidGDF(gdf, radiusMeters, transform_WGS_To_UTM_Flag=True):
+
+    if transform_WGS_To_UTM_Flag:
+        transform_WGS84_To_UTM, transform_UTM_To_WGS84 = createUTMTransform(gdf.centroid.values[0])
+        gdf.to_crs()
         point = shapely.ops.tranform(transform_WGS84_To_UTM, point)
 
     poly = point.Buffer(radiusMeters)
@@ -752,7 +778,8 @@ def cutChipFromMosaic(rasterFileList, shapeFileSrcList, outlineSrc='',outputDire
                                              createPix=createPix,
                                              rasterPolyEnvelope=poly,
                                              baseName=baseName,
-                                             imgId=imgId)
+                                             imgId=imgId,
+                                             s3Options=[])
                     chipSummaryList.append(chipSummary)
 
     return chipSummaryList
@@ -766,7 +793,8 @@ def createclip(outputDirectory, rasterFileList, shapeSrcList,
                rasterPolyEnvelope=ogr.CreateGeometryFromWkt("POLYGON EMPTY"),
                className='',
                baseName='',
-               imgId=-1):
+               imgId=-1,
+               s3Options=[]):
 
     #rasterFileList = [['rasterLocation', 'rasterDescription']]
     # i.e rasterFileList = [['/path/to/3band_AOI_1.tif, '3band'],
@@ -808,10 +836,14 @@ def createclip(outputDirectory, rasterFileList, shapeSrcList,
         ## Clip Image
         print(rasterFile)
         print(outputFileName)
-        subprocess.call(["gdalwarp", "-te", "{}".format(minXCut), "{}".format(minYCut),  "{}".format(maxXCut),
+
+        #TODO replace gdalwarp with rasterio and windowed reads
+        cmd = ["gdalwarp", "-te", "{}".format(minXCut), "{}".format(minYCut),  "{}".format(maxXCut),
                          "{}".format(maxYCut),
                          '-co', 'PHOTOMETRIC=rgb',
-                         rasterFile[0], outputFileName])
+                         rasterFile[0], outputFileName]
+        cmd.extend(s3Options)
+        subprocess.call(cmd)
 
     baseLayerRasterName = os.path.join(outputDirectory, rasterFileList[0][1], className, chipNameList[0])
     outputFileName = os.path.join(outputDirectory, rasterFileList[0][1], chipNameList[0])
@@ -1059,5 +1091,7 @@ def createBufferGeoPandas(inGDF, bufferDistanceMeters=5, bufferRoundness=1, proj
 
 
     return gdf_buffer
+
+#def project_gdfToUTM(gdf, lat=[], lon=[]):
 
 
