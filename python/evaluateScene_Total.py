@@ -41,10 +41,22 @@ def writeAOISummaryToCSV(resultsDict,csvwriter):
 
 
 
+def writeResultsToScreen(resultsDict):
+
+    print('AOI of Interest', resultsDict['AOI_Name'])
+    print('True_Pos_Total', resultsDict['TruePositiveTotal'])
+    print('False_Pos_Total', resultsDict['FalsePositiveTotal'])
+    print('False_Neg_Total', resultsDict['FalseNegativeTotal'])
+    print('F1ScoreTotal', resultsDict['F1ScoreTotal'])
 
 
-
-
+def writePerChipToCSV(resultsDictList, csvwriter):
+    resultsDict = resultsDictList[0]
+    csvwriter.writerow(['ImageId', 'F1Score', 'True Positive Count', 'False Positive Count', 'False Negative Count'])
+    for result in resultsDict['PerImageStatsResultList']:
+        tmpList = [result[1]]
+        tmpList.extend(result[0])
+        csvwriter.writerow(tmpList)
 
 def evaluateSpaceNetSolution_Total(summaryTruthFile, summaryProposalFile, resultsOutputFile='',
                              useParallelProcessing=False, minPolygonSize=0,
@@ -201,10 +213,12 @@ def combineGeoJsonAndConvertToWGS84(baseName, rasterLocationList,
                                              'AOI_3_Paris',
                                              'AOI_4_Shanghai',
                                              'AOI_5_Khartoum'],
-                                    removeGeoJsonAfter=True):
+                                    removeGeoJsonAfter=True,
+                                    verbose=False):
     srcBaseName = os.path.splitext(baseName)[0]
     geoJsonList = glob.glob(srcBaseName+"_*.geojson")
-    print geoJsonList
+    if verbose:
+        print(geoJsonList)
 
     rasterList = []
     for rasterLocation in rasterLocationList:

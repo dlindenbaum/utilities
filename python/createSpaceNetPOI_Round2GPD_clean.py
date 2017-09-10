@@ -123,6 +123,7 @@ def createProcessedPOIDataGPD(srcVectorFile, pointOfInterestList, rasterFileList
                            seperateImageFolders=False,
                            minPartialToInclue = 0.70,
                            defaultfeatureChipScaleM=200,
+                              verbose=False
                            ):
 
     fieldName = pointOfInterestList.keys()[0]
@@ -131,8 +132,10 @@ def createProcessedPOIDataGPD(srcVectorFile, pointOfInterestList, rasterFileList
 
 
     ## determinePixelSize in Meters
-    print rasterFileList
-    print rasterFileList[0][0]
+    if verbose:
+        print(rasterFileList)
+        print(rasterFileList[0][0])
+
     with rasterio.open(rasterFileList[0][0]) as src:
         geoTransform = src.affine.to_gdal()
 

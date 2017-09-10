@@ -17,7 +17,6 @@ from shapely.geometry.linestring import LineString
 from shapely.geometry.multilinestring import MultiLineString
 from functools import partial
 try:
-    import rtree
     import centerline
     import osmnx
 except:
@@ -247,21 +246,11 @@ def geoWKTToPixelWKT(geom, inputRaster, targetSR, geomTransform, pixPrecision=2)
 
 
 
-
-
-def create_rtreefromdict(buildinglist):
-    # create index
-    index = rtree.index.Index(interleaved=False)
-    for idx, building in enumerate(buildinglist):
-        index.insert(idx, building['poly'].GetEnvelope())
-
-    return index
-
 def search_rtree(test_building, index):
     # input test shapely polygon geometry  and rtree index
     if test_building.geom_type == 'Polygon' or \
                     test_building.geom_type == 'MultiPolygon':
-        fidlist = list(index.intersection(test_building.bounds))
+        fidlist = index.intersection(test_building.bounds)
     else:
         fidlist = []
 
