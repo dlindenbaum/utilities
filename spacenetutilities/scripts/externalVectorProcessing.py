@@ -1,6 +1,8 @@
 from spacenetutilities import geoTools as gT
 from spacenetutilities import labeltools as lT
-from osgeo import gdal, ogr, osr
+import fiona as fio
+import geopandas as gpd
+import rasterio
 import argparse
 import os
 import glob
@@ -8,40 +10,30 @@ import glob
 
 
 def buildTindex(rasterFolder, rasterExtention='.tif'):
+
     rasterList = glob.glob(os.path.join(rasterFolder, '*{}'.format(rasterExtention)))
     print(rasterList)
 
     print(os.path.join(rasterFolder, '*{}'.format(rasterExtention)))
 
-    memDriver = ogr.GetDriverByName('MEMORY')
-    gTindex = memDriver.CreateDataSource('gTindex')
-    srcImage = gdal.Open(rasterList[0])
-    spat_ref = osr.SpatialReference()
-    spat_ref.SetProjection(srcImage.GetProjection())
-    gTindexLayer = gTindex.CreateLayer("gtindexlayer", spat_ref, geom_type=ogr.wkbPolygon)
-
-    # Add an ID field
-    idField = ogr.FieldDefn("location", ogr.OFTString)
-    gTindexLayer.CreateField(idField)
-
-    # Create the feature and set values
-    featureDefn = gTindexLayer.GetLayerDefn()
 
 
+    featureList = []
 
     for rasterFile in rasterList:
-        srcImage = gdal.Open(rasterFile)
-
-        geoTrans, polyToCut, ulX, ulY, lrX, lrY = gT.getRasterExtent(srcImage)
-
-        feature = ogr.Feature(featureDefn)
-        feature.SetGeometry(polyToCut)
-        feature.SetField("location", rasterFile)
-        gTindexLayer.CreateFeature(feature)
-        feature = None
+        with rasterio.open(rasterFile) as srcImage:
 
 
-    return gTindex, gTindexLayer
+            geoTrans, polyToCut, ulX, ulY, lrX, lrY = gT.getRasterExtent(srcImage)
+
+        feature = {'geometry': polyToCut,
+                   'location': rasterFile}
+
+        featureList.append(feature)
+
+        geoDFTindex = gpd.GeoDataFrame(featureList)
+
+    return geoDFTindex
 
 
 def createTiledGeoJsonFromSrc(rasterFolderLocation, vectorSrcFile, geoJsonOutputDirectory, rasterTileIndex='',
@@ -49,16 +41,16 @@ def createTiledGeoJsonFromSrc(rasterFolderLocation, vectorSrcFile, geoJsonOutput
                               rasterPrefixToReplace='PAN'
                               ):
     if rasterTileIndex == '':
-        gTindex, gTindexLayer = buildTindex(rasterFolderLocation, rasterExtention=rasterFileExtenstion)
+        geoDFTindex = buildTindex(rasterFolderLocation, rasterExtention=rasterFileExtenstion)
     else:
-        gTindex = ogr.Open(rasterTileIndex,0)
-        gTindexLayer = gTindex.GetLayer()
+        geoDFTindex = gpd.read_file(rasterTileIndex)
 
-    shapeSrc = ogr.Open(vectorSrcFile,0)
+    shapeSrc = gpd.read_file(vectorSrcFile)
+
     chipSummaryList = []
-    for feature in gTindexLayer:
-        featureGeom = feature.GetGeometryRef()
-        rasterFileName = feature.GetField('location')
+    for idx, feature in geoDFTindex.iterrows():
+        featureGeom = feature['geometry']
+        rasterFileName = feature['location']
         rasterFileBaseName = os.path.basename(rasterFileName)
         outGeoJson = rasterFileBaseName.replace(rasterPrefixToReplace, geoJsonPrefix)
         outGeoJson = outGeoJson.replace(rasterFileExtenstion, '.geojson')
@@ -125,6 +117,7 @@ if __name__ == "__main__":
                               geoJsonPrefix=vectorPrefix, rasterFileExtenstion=rasterFileExtension,
                               rasterPrefixToReplace=rasterPrefix
                               )
+
 
 
     outputCSVFileName = geoJsonOutputDirectory+"OSM_Proposal.csv"
