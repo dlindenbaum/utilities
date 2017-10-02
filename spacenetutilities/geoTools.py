@@ -428,7 +428,7 @@ def createPolygonFromCorners(left,bottom,right, top):
     return poly
 
 
-def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, shapeLabel='Geo', debug=False):
+def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType="Polygon", shapeLabel='Geo', debug=False):
     # check if geoDF has origAreaField
     outGeoJSon = os.path.splitext(outputFileName)[0] + '.geojson'
     if not os.path.exists(os.path.dirname(outGeoJSon)):
@@ -436,17 +436,36 @@ def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, shapeLab
     if debug:
         print(outGeoJSon)
 
-    if 'origarea' in geoDF.columns:
-        pass
-    else:
-        geoDF['origarea'] = geoDF.area
 
     #TODO must implement different case for lines and for spatialIndex
+    if geomType=="LineString":
+        if 'origarea' in geoDF.columns:
+            pass
+        else:
+            geoDF['origarea'] = 0
+        if 'origlen' in geoDF.columns:
+            pass
+        else:
+            geoDF['origlen'] = geoDF.length
 
 
-    cutGeoDF = geoDF.loc[geoDF.intersection(polyToCut).area/geoDF['origarea'] > minpartialPerc].copy()
-    cutGeoDF['partialDec'] = cutGeoDF.area/cutGeoDF['origarea']
-    cutGeoDF['truncated'] = (cutGeoDF['partialDec']==1.0).astype(int)
+        cutGeoDF = geoDF.loc[geoDF.intersection(polyToCut).length / geoDF['origlen'] > minpartialPerc].copy()
+        cutGeoDF['partialDec'] = cutGeoDF.length / cutGeoDF['origlen']
+        cutGeoDF['truncated'] = (cutGeoDF['partialDec'] == 1.0).astype(int)
+
+    else:
+        if 'origarea' in geoDF.columns:
+            pass
+        else:
+            geoDF['origarea'] = geoDF.area
+        if 'origlen' in geoDF.columns:
+            pass
+        else:
+            geoDF['origlen'] = 0
+
+        cutGeoDF = geoDF.loc[geoDF.intersection(polyToCut).area/geoDF['origarea'] > minpartialPerc].copy()
+        cutGeoDF['partialDec'] = cutGeoDF.area/cutGeoDF['origarea']
+        cutGeoDF['truncated'] = (cutGeoDF['partialDec']==1.0).astype(int)
 
     if cutGeoDF.empty:
         with open(outGeoJSon, 'a'):
