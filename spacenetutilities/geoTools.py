@@ -463,7 +463,9 @@ def createPolygonFromCorners(left,bottom,right, top):
     return poly
 
 
-def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType="Polygon", shapeLabel='Geo', debug=False):
+def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType="Polygon", shapeLabel='Geo',
+                  spatial_index=[],
+                  debug=False):
     # check if geoDF has origAreaField
     outGeoJSon = os.path.splitext(outputFileName)[0] + '.geojson'
     if not os.path.exists(os.path.dirname(outGeoJSon)):
@@ -495,7 +497,13 @@ def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType
             geoDF['origlen'] = 0
     #TODO must implement different case for lines and for spatialIndex
 
-    cutGeoDF = geoDF.copy()
+    if spatial_index:
+        possible_matches_index = list(spatial_index.intersection(polyToCut.bounds))
+        possible_matches = geoDF.iloc[possible_matches_index]
+        cutGeoDF = possible_matches[possible_matches.intersects(polyToCut)]
+    else:
+        cutGeoDF = geoDF.copy()
+
     cutGeoDF.geometry=geoDF.intersection(polyToCut)
 
     if geomType=='Polygon':
