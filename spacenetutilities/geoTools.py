@@ -504,7 +504,7 @@ def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType
     #cutGeoDF = geoDF.loc[geoDF.intersection(polyToCut).area/geoDF['origarea'] > minpartialPerc].copy()
         cutGeoDF['truncated'] = (cutGeoDF['partialDec']!=1.0).astype(int)
     else:
-        cutGeoDF = cutGeoDF[cutGeoDF.geom_type != "GeometryCollection"]
+        cutGeoDF = cutGeoDF[cutGeoDF.length > 0]
         cutGeoDF['partialDec']=1
         cutGeoDF['truncated']=0
 
