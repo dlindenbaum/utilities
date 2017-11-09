@@ -264,7 +264,7 @@ def createCSVSummaryFileRoads(chipSummaryList, outputFileName, rasterChipDirecto
 
             if len(roadsList) > 0:
                 for idx, road in roadsList.iterrows():
-                    imageId = os.path.basename(chipName).replace(replaceImageID, "")
+                    imageId = os.path.splitext(os.path.basename(chipName).replace(replaceImageID, ""))[0]
                     # stripOut Potential Z Geometry
                     tmpGeom = LineString([np.round(xy[0:2], pixPrecision) for xy in list(road['geometry'].coords)])
                     if createProposalsFile:
