@@ -499,29 +499,32 @@ def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType
 
     if spatial_index:
         possible_matches_index = list(spatial_index.intersection(polyToCut.bounds))
-        possible_matches = geoDF.iloc[possible_matches_index]
-        cutGeoDF = possible_matches[possible_matches.intersects(polyToCut)]
+        cutGeoDF = geoDF.iloc[possible_matches_index]
+        cutGeoDF.geometry = cutGeoDF.intersection(polyToCut)
     else:
         cutGeoDF = geoDF.copy()
+        cutGeoDF.geometry=geoDF.intersection(polyToCut)
 
-    cutGeoDF.geometry=geoDF.intersection(polyToCut)
+    if not cutGeoDF.empty:
+        if geomType=='Polygon':
+            cutGeoDF['partialDec'] = cutGeoDF.area / cutGeoDF['origarea']
+            cutGeoDF = cutGeoDF.loc[cutGeoDF['partialDec'] > minpartialPerc].copy()
+        #cutGeoDF = geoDF.loc[geoDF.intersection(polyToCut).area/geoDF['origarea'] > minpartialPerc].copy()
+            cutGeoDF['truncated'] = (cutGeoDF['partialDec']!=1.0).astype(int)
+        else:
+            cutGeoDF = cutGeoDF[cutGeoDF.length > 0]
+            cutGeoDF['partialDec']=1
+            cutGeoDF['truncated']=0
 
-    if geomType=='Polygon':
-        cutGeoDF['partialDec'] = cutGeoDF.area / cutGeoDF['origarea']
-        cutGeoDF = cutGeoDF.loc[cutGeoDF['partialDec'] > minpartialPerc].copy()
-    #cutGeoDF = geoDF.loc[geoDF.intersection(polyToCut).area/geoDF['origarea'] > minpartialPerc].copy()
-        cutGeoDF['truncated'] = (cutGeoDF['partialDec']!=1.0).astype(int)
+        if cutGeoDF.empty:
+            with open(outGeoJSon, 'a'):
+                os.utime(outGeoJSon, None)
+        else:
+        ##TODO Verify this works in DockerBuild
+            cutGeoDF.to_file(outGeoJSon, driver='GeoJSON')
     else:
-        cutGeoDF = cutGeoDF[cutGeoDF.length > 0]
-        cutGeoDF['partialDec']=1
-        cutGeoDF['truncated']=0
-
-    if cutGeoDF.empty:
         with open(outGeoJSon, 'a'):
             os.utime(outGeoJSon, None)
-    else:
-    ##TODO Verify this works in DockerBuild
-        cutGeoDF.to_file(outGeoJSon, driver='GeoJSON')
 
 
 def cutChipFromMosaic(rasterFileList, shapeFileSrcList, outlineSrc='',outputDirectory='', outputPrefix='clip_',
