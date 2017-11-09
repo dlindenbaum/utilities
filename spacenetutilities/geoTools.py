@@ -500,7 +500,10 @@ def clipShapeFile(geoDF, outputFileName, polyToCut, minpartialPerc=0.0, geomType
     if spatial_index:
         possible_matches_index = list(spatial_index.intersection(polyToCut.bounds))
         cutGeoDF = geoDF.iloc[possible_matches_index]
-        cutGeoDF.geometry = cutGeoDF.intersection(polyToCut)
+        if not cutGeoDF.empty:
+            cutGeoDF.geometry = cutGeoDF.intersection(polyToCut)
+
+
     else:
         cutGeoDF = geoDF.copy()
         cutGeoDF.geometry=geoDF.intersection(polyToCut)
