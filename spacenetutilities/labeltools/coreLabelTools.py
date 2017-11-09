@@ -275,9 +275,9 @@ def createCSVSummaryFileRoads(chipSummaryList, outputFileName, rasterChipDirecto
             else:
                 imageId = os.path.splitext(os.path.basename(chipName))[0].replace(replaceImageID, "")
                 if createProposalsFile:
-                    writerTotal.writerow([imageId, 'LineString EMPTY'])
+                    writerTotal.writerow([imageId, 'LINESTRING EMPTY'])
                 else:
-                    writerTotal.writerow([imageId, 'LineString EMPTY'])
+                    writerTotal.writerow([imageId, 'LINESTRING EMPTY'])
 
 
 def createCSVSummaryFileFromJsonList(geoJsonList, outputFileName, chipnameList=[],
