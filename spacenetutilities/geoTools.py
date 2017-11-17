@@ -139,7 +139,7 @@ def geomGeo2geomPixel(geom, affineObject=[], input_raster='', gdal_geomTransform
     # input_raster is path to raster to gather georectifcation information
     if not affineObject:
         if input_raster != '':
-            affineObject = rio.open(input_raster).affine
+            affineObject = rio.open(input_raster).transform
         else:
             affineObject = af.Affine.from_gdal(gdal_geomTransform)
 
